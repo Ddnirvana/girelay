@@ -1,0 +1,28 @@
+[package]
+name = "girelay"
+version = "0.1.0"
+edition.workspace = true
+rust-version = "1.85"
+description = "Git worktrees built for coding-agent isolation, relay, merge, and recovery"
+license.workspace = true
+readme = "../../README.md"
+repository = "https://github.com/Ddnirvana/girelay"
+homepage = "https://github.com/Ddnirvana/girelay"
+documentation = "https://github.com/Ddnirvana/girelay/tree/main/docs"
+keywords = ["git", "agents", "cli", "workflow", "developer-tools"]
+categories = ["command-line-utilities", "development-tools"]
+publish = false # Enable only for the coordinated first public crates.io release.
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+toml = "0.8"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true

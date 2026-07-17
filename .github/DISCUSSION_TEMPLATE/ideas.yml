@@ -1,0 +1,26 @@
+title: "Idea: "
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for product ideas, integration requests, and workflow feedback.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Agent workflow problem
+      description: What agent/Git workflow pain does this idea address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should girelay do?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence or examples
+      description: Link to tools, transcripts, repos, screenshots, or prior art if helpful.

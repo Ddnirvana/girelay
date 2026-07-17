@@ -1,0 +1,14 @@
+/target
+/dist
+.DS_Store
+/.private/
+/AGENTS.md
+/AGENTS.override.md
+*.tmp
+*.log
+assets/demo/*.gif
+assets/demo/*.mp4
+!assets/demo/girelay-run-demo.gif
+!assets/demo/girelay-run-demo.mp4
+assets/demo/*-transcript.txt
+!assets/demo/girelay-run-demo-transcript.txt

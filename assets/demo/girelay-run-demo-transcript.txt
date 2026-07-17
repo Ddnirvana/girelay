@@ -1,0 +1,27 @@
+$ girelay start parser-fix --intent "Add parser and tests" -- <agent>
+Created task parser-fix
+Workspace: <demo>/repo/.girelay/workspaces/parser-fix
+Branch: agent/parser-fix
+Relaying task parser-fix to sh
+Workspace: <demo>/repo/.girelay/workspaces/parser-fix
+Recorded semantic report for session 1784128331-355222000
+Session: 1784128331-355222000 (completed)
+Changed files: 1
+$ girelay relay parser-fix -- <next-agent>
+Relaying task parser-fix to sh
+Workspace: <demo>/repo/.girelay/workspaces/parser-fix
+Recorded semantic report for session 1784128331-528113000
+Session: 1784128331-528113000 (completed)
+Changed files: 2
+$ girelay status parser-fix
+Task                 State      Dirty  Report   Branch
+parser-fix           paused     yes    yes      agent/parser-fix
+$ girelay merge parser-fix --strategy squash
+Merged task parser-fix with squash strategy
+Source commit: e6237c21f24ecc0ee92d1e43496d436d7914bda3
+Rollback: refs/girelay/rollback/source/parser-fix/1784128331-817666000
+$ girelay clean parser-fix
+Cleaned task parser-fix
+Branch: retained
+$ git log -1 --oneline
+e6237c2 feat: add parser and tests

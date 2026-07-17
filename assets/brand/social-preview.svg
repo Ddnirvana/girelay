@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">girelay, Git worktrees built for coding-agent relay</title>
+  <desc id="desc">Terminal-inspired preview showing a coding task moving from one agent to another and merging safely.</desc>
+  <rect width="1280" height="640" fill="#111513"/>
+  <rect x="64" y="64" width="1152" height="512" rx="8" fill="#1b211e" stroke="#445148" stroke-width="2"/>
+  <circle cx="98" cy="98" r="7" fill="#f16d64"/>
+  <circle cx="122" cy="98" r="7" fill="#efc45b"/>
+  <circle cx="146" cy="98" r="7" fill="#69c17d"/>
+  <text x="96" y="210" fill="#f2f5f2" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="88" font-weight="700">girelay</text>
+  <text x="96" y="270" fill="#b9c4bc" font-family="ui-sans-serif, system-ui, sans-serif" font-size="34">Git worktrees built for coding-agent relay.</text>
+  <text x="96" y="370" fill="#72d68a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="24">$ girelay start auth-fix --intent "Fix auth" -- codex</text>
+  <text x="96" y="424" fill="#d7ded9" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="22">start  ->  relay  ->  merge  ->  clean  ->  recover</text>
+  <text x="96" y="500" fill="#8fa198" font-family="ui-sans-serif, system-ui, sans-serif" font-size="24">Isolated. Reviewable. Recoverable.</text>
+</svg>

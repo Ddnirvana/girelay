@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ddnirvana/girelay/schemas/recovery.schema.json",
+  "title": "girelay recovery list v2",
+  "type": "object",
+  "required": ["schema_version", "recovery_points"],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "recovery_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["recovery_id", "task_id", "kind", "object", "restorable", "note"]
+      }
+    }
+  }
+}

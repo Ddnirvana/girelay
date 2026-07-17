@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ddnirvana/girelay/schemas/archive-manifest.schema.json",
+  "title": "girelay cleanup archive manifest v2",
+  "type": "object",
+  "required": ["schema_version", "archive_id", "task_id", "branch", "branch_tip", "restore_commit", "restore_ref", "created_at", "bundle", "bundle_sha256", "task_metadata", "files"],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "archive_id": { "type": "string" },
+    "task_id": { "type": "string" },
+    "branch": { "type": "string" },
+    "branch_tip": { "type": "string" },
+    "restore_commit": { "type": "string" },
+    "restore_ref": { "type": "string" },
+    "created_at": { "type": "string" },
+    "bundle": { "type": "string" },
+    "bundle_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "task_metadata": { "type": "string" },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  }
+}

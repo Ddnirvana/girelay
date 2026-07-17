@@ -1,0 +1,11 @@
+Package: girelay
+Version: __VERSION__
+Section: devel
+Priority: optional
+Architecture: __ARCH__
+Maintainer: __MAINTAINER__
+Depends: git, ca-certificates
+Description: Git worktrees built for coding-agent relay
+ Girelay runs coding agents in isolated native Git worktrees and adds durable
+ task intent, session snapshots, semantic relay reports, reviewed local merge,
+ guarded cleanup, and rollback recovery.

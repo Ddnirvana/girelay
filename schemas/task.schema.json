@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ddnirvana/girelay/schemas/task.schema.json",
+  "title": "girelay task v2",
+  "type": "object",
+  "required": ["schema_version", "id", "intent", "source_repo", "workspace_path", "base_branch", "base_commit", "branch", "created_at", "updated_at", "lifecycle", "active_session_id", "latest_session_id", "merge"],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "id": { "type": "string" },
+    "intent": { "type": "string" },
+    "source_repo": { "type": "string" },
+    "workspace_path": { "type": "string" },
+    "base_branch": { "type": "string" },
+    "base_commit": { "type": "string" },
+    "branch": { "type": "string" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "lifecycle": { "enum": ["active", "merged", "cleaned"] },
+    "active_session_id": { "type": ["string", "null"] },
+    "latest_session_id": { "type": ["string", "null"] },
+    "merge": { "type": ["object", "null"] }
+  }
+}

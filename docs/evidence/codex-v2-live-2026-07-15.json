@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "date": "2026-07-15",
+  "agent": "codex",
+  "agent_version": "0.144.3",
+  "status": "authenticated-live",
+  "scenario": "repair a failing task-id normalizer in a disposable native worktree",
+  "assertions": {
+    "native_worktree": true,
+    "source_clean_during_session": true,
+    "durable_intent_available": true,
+    "tests_failed_before": true,
+    "tests_passed_after": true,
+    "only_expected_file_changed": true,
+    "semantic_report_submitted": true,
+    "malformed_report_rejected": true,
+    "squash_merge": true,
+    "task_rollback_ref": true,
+    "source_rollback_ref": true,
+    "cleanup_retained_branch": true
+  },
+  "changed_files": ["task_id.py"],
+  "claude_live_status": "unavailable"
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ddnirvana/girelay/schemas/session.schema.json",
+  "title": "girelay session v2",
+  "type": "object",
+  "required": ["schema_version", "task_id", "session_id", "agent", "command", "started_at", "finished_at", "exit_code", "state", "start_snapshot", "end_snapshot", "changed_files", "report_path", "trust"],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "task_id": { "type": "string" },
+    "session_id": { "type": "string" },
+    "agent": { "type": "string" },
+    "command": { "type": "array", "items": { "type": "string" } },
+    "started_at": { "type": "string" },
+    "finished_at": { "type": ["string", "null"] },
+    "exit_code": { "type": ["integer", "null"] },
+    "state": { "enum": ["running", "completed", "failed", "failed-to-start", "interrupted"] },
+    "start_snapshot": { "type": "string" },
+    "end_snapshot": { "type": ["string", "null"] },
+    "changed_files": { "type": "array", "items": { "type": "string" } },
+    "report_path": { "type": ["string", "null"] },
+    "trust": {
+      "type": "object",
+      "required": ["git_state", "process_result", "semantic_report"]
+    }
+  }
+}

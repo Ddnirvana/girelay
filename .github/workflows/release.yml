@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: bash scripts/release-check.sh
+
+  build-artifacts:
+    needs: release-check
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            deb_arch: amd64
+            bin: girelay
+            archive: girelay-linux-x86_64.tar.gz
+          - name: linux-aarch64
+            os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            deb_arch: arm64
+            bin: girelay
+            archive: girelay-linux-aarch64.tar.gz
+          - name: macos-x86_64
+            os: macos-13
+            target: x86_64-apple-darwin
+            bin: girelay
+            archive: girelay-macos-x86_64.tar.gz
+            deb_arch: ""
+          - name: macos-aarch64
+            os: macos-14
+            target: aarch64-apple-darwin
+            bin: girelay
+            archive: girelay-macos-aarch64.tar.gz
+            deb_arch: ""
+          - name: windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: girelay.exe
+            archive: girelay-windows-x86_64.zip
+            deb_arch: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }}
+      - name: Package artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "dist/${{ matrix.bin }}"
+          cd dist
+          if [[ "${{ matrix.archive }}" == *.zip ]]; then
+            7z a "${{ matrix.archive }}" "${{ matrix.bin }}"
+          else
+            tar -czf "${{ matrix.archive }}" "${{ matrix.bin }}"
+          fi
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "${{ matrix.archive }}" > "${{ matrix.archive }}.sha256"
+          else
+            shasum -a 256 "${{ matrix.archive }}" > "${{ matrix.archive }}.sha256"
+          fi
+      - name: Package Debian artifact
+        if: matrix.deb_arch != ''
+        shell: bash
+        env:
+          GIRELAY_DEB_MAINTAINER: ${{ github.repository_owner }} <${{ github.repository_owner }}@users.noreply.github.com>
+        run: bash scripts/package-deb.sh build "${{ matrix.target }}" "${{ matrix.deb_arch }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: |
+            dist/${{ matrix.archive }}
+            dist/${{ matrix.archive }}.sha256
+            dist/*.deb
+            dist/*.deb.sha256
+
+  github-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*

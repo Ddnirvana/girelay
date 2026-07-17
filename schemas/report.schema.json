@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ddnirvana/girelay/schemas/report.schema.json",
+  "title": "girelay semantic report v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "task_id", "session_id", "agent", "start_snapshot", "end_snapshot", "summary", "completed", "remaining", "decisions", "failed_attempts", "blockers", "tests", "risks", "next_action", "trust"],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "task_id": { "type": "string" },
+    "session_id": { "type": "string" },
+    "agent": { "type": "string" },
+    "start_snapshot": { "type": "string" },
+    "end_snapshot": { "type": ["string", "null"] },
+    "summary": { "type": "string", "minLength": 1 },
+    "completed": { "type": "array", "items": { "type": "string" } },
+    "remaining": { "type": "array", "items": { "type": "string" } },
+    "decisions": { "type": "array", "items": { "type": "string" } },
+    "failed_attempts": { "type": "array", "items": { "type": "string" } },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "tests": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "next_action": { "type": "string", "minLength": 1 },
+    "trust": { "const": "reported-by-agent" }
+  }
+}

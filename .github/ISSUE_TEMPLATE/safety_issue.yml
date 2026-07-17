@@ -1,0 +1,18 @@
+name: Safety issue
+description: Report a risky Git/history/workspace behavior.
+title: "safety: "
+labels: ["safety"]
+body:
+  - type: textarea
+    id: risk
+    attributes:
+      label: Safety risk
+      description: Describe the risky behavior and whether data/history could be lost.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true

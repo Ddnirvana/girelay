@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ddnirvana/girelay/schemas/status.schema.json",
+  "title": "girelay status v2",
+  "type": "object",
+  "required": ["schema_version", "repo", "tasks"],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "repo": { "type": "string" },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "intent", "branch", "workspace", "state", "dirty", "changed_files", "active_session_id", "latest_session_id", "report_available", "merged_commit", "blockers"],
+        "properties": {
+          "id": { "type": "string" },
+          "intent": { "type": "string" },
+          "branch": { "type": "string" },
+          "workspace": { "type": "string" },
+          "state": { "enum": ["created", "running", "paused", "merged", "cleaned", "missing", "blocked"] },
+          "dirty": { "type": ["boolean", "null"] },
+          "changed_files": { "type": "array", "items": { "type": "string" } },
+          "active_session_id": { "type": ["string", "null"] },
+          "latest_session_id": { "type": ["string", "null"] },
+          "report_available": { "type": "boolean" },
+          "merged_commit": { "type": ["string", "null"] },
+          "blockers": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

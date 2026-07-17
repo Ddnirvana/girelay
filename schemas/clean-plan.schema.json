@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ddnirvana/girelay/schemas/clean-plan.schema.json",
+  "title": "girelay cleanup plan v2",
+  "type": "object",
+  "required": ["schema_version", "task_id", "workspace", "branch", "workspace_exists", "dirty", "delete_branch", "branch_tip", "preserved_by", "archive_requested", "blockers"],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "task_id": { "type": "string" },
+    "workspace": { "type": "string" },
+    "branch": { "type": "string" },
+    "workspace_exists": { "type": "boolean" },
+    "dirty": { "type": "boolean" },
+    "delete_branch": { "type": "boolean" },
+    "branch_tip": { "type": ["string", "null"] },
+    "preserved_by": { "type": "array", "items": { "type": "string" } },
+    "archive_requested": { "type": "boolean" },
+    "blockers": { "type": "array", "items": { "type": "string" } }
+  }
+}
