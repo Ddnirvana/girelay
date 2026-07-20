@@ -374,6 +374,70 @@ fn snapshot_recovery_creates_a_new_worktree_without_overwriting_task() {
 }
 
 #[test]
+fn recovery_list_reports_readable_inventory_age_count_and_storage() {
+    let repo = Repo::new();
+    repo.start("inventory");
+    run_ok(
+        &repo.root,
+        &[
+            "relay",
+            "inventory",
+            "--",
+            "sh",
+            "-c",
+            "printf inventory > inventory.txt",
+        ],
+    );
+    let value: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &["recover", "list", "inventory", "--json"],
+    ))
+    .unwrap();
+    assert!(value["count"].as_u64().unwrap() >= 2);
+    assert!(value["oldest_created_at"].is_string());
+    assert!(value["disk_usage_bytes"].as_u64().unwrap() > 0);
+    for point in value["recovery_points"].as_array().unwrap() {
+        assert!(point["created_at"].is_string());
+        assert!(point["size_bytes"].is_u64());
+    }
+    let human = run_ok(&repo.root, &["recover", "list", "inventory"]);
+    assert!(human.contains("Type"));
+    assert!(human.contains("Recovery points:"));
+    assert!(human.contains("Approximate storage:"));
+    assert!(human.contains("id: refs/girelay/snapshots/inventory/"));
+}
+
+#[test]
+fn numeric_task_id_does_not_replace_recovery_creation_timestamp() {
+    let repo = Repo::new();
+    repo.start("1234567890");
+    run_ok(
+        &repo.root,
+        &[
+            "relay",
+            "1234567890",
+            "--",
+            "sh",
+            "-c",
+            "printf numeric > numeric.txt",
+        ],
+    );
+    let value: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &["recover", "list", "1234567890", "--json"],
+    ))
+    .unwrap();
+    for point in value["recovery_points"].as_array().unwrap() {
+        let created = point["created_at"]
+            .as_str()
+            .unwrap()
+            .parse::<u64>()
+            .unwrap();
+        assert!(created > 1_700_000_000, "unexpected timestamp: {created}");
+    }
+}
+
+#[test]
 fn branch_deletion_refuses_when_task_tip_changed_after_merge() {
     let repo = Repo::new();
     let workspace = repo.start("task-advanced");

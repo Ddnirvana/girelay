@@ -144,6 +144,10 @@ pub fn changed_files(repo: &Path, base: &str, head: &str) -> Result<Vec<String>>
         .collect())
 }
 
+pub fn object_size(repo: &Path, object: &str) -> Result<u64> {
+    Ok(run(repo, &["cat-file", "-s", object])?.stdout.parse()?)
+}
+
 pub fn add_worktree(source: &Path, destination: &Path, branch: &str, base: &str) -> Result<()> {
     run_quiet(
         source,

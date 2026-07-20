@@ -3,14 +3,27 @@
   "$id": "https://github.com/Ddnirvana/girelay/schemas/recovery.schema.json",
   "title": "girelay recovery list v2",
   "type": "object",
-  "required": ["schema_version", "recovery_points"],
+  "required": ["schema_version", "count", "oldest_created_at", "disk_usage_bytes", "recovery_points"],
   "properties": {
     "schema_version": { "const": 2 },
+    "count": { "type": "integer" },
+    "oldest_created_at": { "type": ["string", "null"] },
+    "disk_usage_bytes": { "type": "integer" },
     "recovery_points": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["recovery_id", "task_id", "kind", "object", "restorable", "note"]
+        "required": ["recovery_id", "task_id", "kind", "object", "restorable", "created_at", "size_bytes", "note"],
+        "properties": {
+          "recovery_id": { "type": "string" },
+          "task_id": { "type": "string" },
+          "kind": { "type": "string" },
+          "object": { "type": ["string", "null"] },
+          "restorable": { "type": "boolean" },
+          "created_at": { "type": ["string", "null"] },
+          "size_bytes": { "type": "integer" },
+          "note": { "type": "string" }
+        }
       }
     }
   }

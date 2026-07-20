@@ -12,12 +12,17 @@ struct RecoveryPoint {
     kind: String,
     object: Option<String>,
     restorable: bool,
+    created_at: Option<String>,
+    size_bytes: u64,
     note: String,
 }
 
 #[derive(Debug, Serialize)]
 struct RecoveryList {
     schema_version: u32,
+    count: usize,
+    oldest_created_at: Option<String>,
+    disk_usage_bytes: u64,
     recovery_points: Vec<RecoveryPoint>,
 }
 
@@ -62,20 +67,47 @@ fn list(source: &Path, filter: Option<&str>, json: bool) -> Result<()> {
     if let Some(task_id) = filter {
         points.retain(|point| point.task_id == task_id);
     }
-    points.sort_by(|a, b| a.recovery_id.cmp(&b.recovery_id));
+    points.sort_by(|a, b| {
+        a.created_at
+            .cmp(&b.created_at)
+            .then_with(|| a.recovery_id.cmp(&b.recovery_id))
+    });
+    let summary = recovery_list(points);
     if json {
-        return output::json(&RecoveryList {
-            schema_version: task::SCHEMA_VERSION,
-            recovery_points: points,
-        });
+        return output::json(&summary);
     }
-    if points.is_empty() {
+    if summary.recovery_points.is_empty() {
         println!("No recovery points found.");
         return Ok(());
     }
-    for point in points {
-        println!("{}  {:<16} {}", point.recovery_id, point.kind, point.note);
+    println!(
+        "{:<18} {:<12} {:<11} Description",
+        "Type", "Created", "Restorable"
+    );
+    for point in &summary.recovery_points {
+        println!(
+            "{:<18} {:<12} {:<11} {}",
+            point.kind,
+            relative_age(point.created_at.as_deref()),
+            if point.restorable { "yes" } else { "no" },
+            point.note
+        );
+        println!("  id: {}", point.recovery_id);
     }
+    println!("Recovery points: {}", summary.count);
+    println!(
+        "Oldest: {}",
+        summary
+            .oldest_created_at
+            .as_deref()
+            .map(|value| relative_age(Some(value)))
+            .unwrap_or_else(|| "unknown".into())
+    );
+    println!(
+        "Approximate storage: {}",
+        human_bytes(summary.disk_usage_bytes)
+    );
+    println!("Use `girelay recover show <recovery-id>` for exact refs and objects.");
     Ok(())
 }
 
@@ -88,11 +120,31 @@ fn show(source: &Path, id: &str, json: bool) -> Result<()> {
     println!("Recovery: {}", point.recovery_id);
     println!("Task: {}", point.task_id);
     println!("Type: {}", point.kind);
+    println!(
+        "Created: {}",
+        point.created_at.as_deref().unwrap_or("unknown")
+    );
+    println!("Approximate size: {}", human_bytes(point.size_bytes));
     if let Some(object) = point.object {
         println!("Object: {object}");
     }
     println!("Restore: {}", point.note);
     Ok(())
+}
+
+fn recovery_list(points: Vec<RecoveryPoint>) -> RecoveryList {
+    let oldest_created_at = points
+        .iter()
+        .filter_map(|point| point.created_at.as_ref())
+        .min_by_key(|value| value.parse::<u64>().unwrap_or(u64::MAX))
+        .cloned();
+    RecoveryList {
+        schema_version: task::SCHEMA_VERSION,
+        count: points.len(),
+        oldest_created_at,
+        disk_usage_bytes: points.iter().map(|point| point.size_bytes).sum(),
+        recovery_points: points,
+    }
 }
 
 fn unlock(source: &Path, task_id: &str, confirm: bool, json: bool) -> Result<()> {
@@ -412,35 +464,45 @@ fn ref_points(source: &Path) -> Result<Vec<RecoveryPoint>> {
             "refs/girelay/rollback/",
         ],
     )?;
-    Ok(out
-        .stdout
-        .lines()
-        .filter_map(|line| {
-            let (reference, object) = line.split_once('\t')?;
-            classify_ref(reference, object)
-        })
-        .collect())
+    let mut points = Vec::new();
+    for line in out.stdout.lines() {
+        let Some((reference, object)) = line.split_once('\t') else {
+            continue;
+        };
+        let Some(mut point) = classify_ref(reference, object) else {
+            continue;
+        };
+        point.size_bytes = git::object_size(source, object).unwrap_or(0);
+        points.push(point);
+    }
+    Ok(points)
 }
 
 fn classify_ref(reference: &str, object: &str) -> Option<RecoveryPoint> {
-    let (kind, task_id, note) =
+    let (kind, task_id, timestamp_id, note) =
         if let Some(rest) = reference.strip_prefix("refs/girelay/snapshots/") {
+            let mut components = rest.split('/');
             (
                 "relay-snapshot",
-                rest.split('/').next()?,
+                components.next()?,
+                components.next()?,
                 "restores into a new recovery branch and worktree",
             )
         } else if let Some(rest) = reference.strip_prefix("refs/girelay/rollback/task/") {
+            let mut components = rest.split('/');
             (
                 "task-rollback",
-                rest.split('/').next()?,
+                components.next()?,
+                components.next()?,
                 "restores into a new recovery branch and worktree",
             )
         } else {
             let rest = reference.strip_prefix("refs/girelay/rollback/source/")?;
+            let mut components = rest.split('/');
             (
                 "source-pre-merge",
-                rest.split('/').next()?,
+                components.next()?,
+                components.next()?,
                 "restores only when the source still matches the recorded merge result",
             )
         };
@@ -450,6 +512,8 @@ fn classify_ref(reference: &str, object: &str) -> Option<RecoveryPoint> {
         kind: kind.into(),
         object: Some(object.into()),
         restorable: true,
+        created_at: created_from_unique_id(timestamp_id),
+        size_bytes: 0,
         note: note.into(),
     })
 }
@@ -460,8 +524,10 @@ fn archive_points(source: &Path) -> Result<Vec<RecoveryPoint>> {
         return Ok(Vec::new());
     }
     let mut points = Vec::new();
-    for entry in fs::read_dir(root)? {
+    for entry in fs::read_dir(&root)? {
         let id = entry?.file_name().to_string_lossy().to_string();
+        let directory = root.join(&id);
+        let size_bytes = directory_size(&directory).unwrap_or(0);
         match clean::verify_archive(source, &id) {
             Ok(manifest) => points.push(RecoveryPoint {
                 recovery_id: format!("archive/{id}"),
@@ -469,6 +535,8 @@ fn archive_points(source: &Path) -> Result<Vec<RecoveryPoint>> {
                 kind: "cleanup-archive".into(),
                 object: Some(manifest.branch_tip),
                 restorable: true,
+                created_at: Some(manifest.created_at),
+                size_bytes,
                 note: "restores the recorded task worktree and metadata".into(),
             }),
             Err(error) => points.push(RecoveryPoint {
@@ -477,11 +545,61 @@ fn archive_points(source: &Path) -> Result<Vec<RecoveryPoint>> {
                 kind: "cleanup-archive".into(),
                 object: None,
                 restorable: false,
+                created_at: created_from_unique_id(&id),
+                size_bytes,
                 note: format!("archive verification failed: {error:#}"),
             }),
         }
     }
     Ok(points)
+}
+
+fn created_from_unique_id(value: &str) -> Option<String> {
+    let mut numeric_parts = value.rsplit('-').filter(|part| {
+        !part.is_empty() && part.chars().all(|character| character.is_ascii_digit())
+    });
+    numeric_parts.next()?;
+    numeric_parts.next().map(ToString::to_string)
+}
+
+fn directory_size(path: &Path) -> Result<u64> {
+    let mut size = 0;
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        let metadata = entry.metadata()?;
+        if metadata.is_dir() {
+            size += directory_size(&entry.path())?;
+        } else {
+            size += metadata.len();
+        }
+    }
+    Ok(size)
+}
+
+fn relative_age(created_at: Option<&str>) -> String {
+    let Some(created) = created_at.and_then(|value| value.parse::<u64>().ok()) else {
+        return "unknown".into();
+    };
+    let now = task::timestamp().parse::<u64>().unwrap_or(created);
+    let seconds = now.saturating_sub(created);
+    match seconds {
+        0..=59 => format!("{seconds}s ago"),
+        60..=3_599 => format!("{}m ago", seconds / 60),
+        3_600..=86_399 => format!("{}h ago", seconds / 3_600),
+        _ => format!("{}d ago", seconds / 86_400),
+    }
+}
+
+fn human_bytes(bytes: u64) -> String {
+    const KIB: u64 = 1024;
+    const MIB: u64 = KIB * 1024;
+    if bytes >= MIB {
+        format!("{:.1} MiB", bytes as f64 / MIB as f64)
+    } else if bytes >= KIB {
+        format!("{:.1} KiB", bytes as f64 / KIB as f64)
+    } else {
+        format!("{bytes} B")
+    }
 }
 
 fn assess(source: &Path, point: &mut RecoveryPoint) {
