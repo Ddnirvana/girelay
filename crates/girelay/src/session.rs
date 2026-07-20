@@ -1,5 +1,5 @@
 use crate::cli::RelayArgs;
-use crate::{errors, git, task, workspace_lock};
+use crate::{analysis, errors, git, task, workspace_lock};
 use anyhow::{Context, Result, anyhow};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -59,6 +59,7 @@ pub fn run_session(source: &Path, mut record: task::Task, command: Vec<String>) 
     let executable = command
         .first()
         .ok_or_else(|| anyhow!("missing agent command after '--'"))?;
+    print_preflight(source, &record, executable)?;
     let mut lock = workspace_lock::acquire(source, &record.id, "agent-session")?;
     let session_id = task::unique_id();
     let start_snapshot = snapshot(source, &record, &session_id, "start")?;
@@ -166,6 +167,35 @@ pub fn run_session(source: &Path, mut record: task::Task, command: Vec<String>) 
             message: format!("agent command exited with code {code}; task state was preserved")
         }));
     }
+    Ok(())
+}
+
+fn print_preflight(source: &Path, record: &task::Task, executable: &str) -> Result<()> {
+    println!("Task: {}", record.id);
+    println!("Intent: {}", record.intent);
+    println!("Workspace: {}", record.workspace_path.display());
+    if let Some(session_id) = &record.latest_session_id {
+        let previous = load(source, &record.id, session_id)?;
+        println!("Previous agent: {}", previous.agent);
+        println!("Previous result: {}", previous.state);
+        let report_path = crate::report::report_file(source, &record.id, session_id);
+        println!(
+            "Semantic report: {}",
+            if report_path.exists() {
+                "available (reported by agent)"
+            } else {
+                "not reported"
+            }
+        );
+    } else {
+        println!("Previous session: none");
+        println!("Semantic report: not reported");
+    }
+    println!(
+        "Changed files: {}",
+        analysis::task_changed_paths(source, record)?.len()
+    );
+    println!("Next agent: {executable}");
     Ok(())
 }
 

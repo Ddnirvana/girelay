@@ -4,6 +4,8 @@ mod common;
 mod v2_cli;
 #[path = "integration/v2_contracts.rs"]
 mod v2_contracts;
+#[path = "integration/v2_coordination.rs"]
+mod v2_coordination;
 #[path = "integration/v2_lifecycle.rs"]
 mod v2_lifecycle;
 #[path = "integration/v2_process.rs"]

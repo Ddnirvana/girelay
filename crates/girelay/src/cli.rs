@@ -98,6 +98,7 @@ pub struct MergeArgs {
 #[derive(Debug, Args)]
 pub struct StatusArgs {
     pub task_id: Option<String>,
+    /// Emit schema-v2 status JSON.
     #[arg(long)]
     pub json: bool,
 }

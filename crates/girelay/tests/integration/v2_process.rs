@@ -109,6 +109,11 @@ fn concurrent_session_is_refused_and_killed_parent_is_recoverable() {
     )
     .unwrap();
     assert!(active["active_session_id"].is_string());
+    let running: Value =
+        serde_json::from_str(&run_ok(&repo.root, &["status", "locked", "--json"])).unwrap();
+    assert_eq!(running["tasks"][0]["active_session"]["agent"], "sleep");
+    assert_eq!(running["tasks"][0]["active_session"]["state"], "running");
+    assert!(running["tasks"][0]["active_session"]["started_at"].is_string());
     let second = run(&repo.root, &["relay", "locked", "--", "git", "status"]);
     assert_eq!(second.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&second.stderr).contains("active or stale operation"));

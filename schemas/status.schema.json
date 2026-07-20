@@ -11,20 +11,33 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "intent", "branch", "workspace", "state", "dirty", "changed_files", "active_session_id", "latest_session_id", "report_available", "merged_commit", "blockers"],
+        "required": ["id", "intent", "intent_source", "source_branch", "branch", "workspace", "lifecycle", "activity", "workspace_present", "state", "dirty", "changed_files", "active_session_id", "active_session", "latest_session_id", "latest_session", "report_available", "latest_report", "merged_commit", "recovery_points", "divergence", "overlaps", "warnings", "blockers", "next_action"],
         "properties": {
           "id": { "type": "string" },
           "intent": { "type": "string" },
+          "intent_source": { "enum": ["explicit", "task-id"] },
+          "source_branch": { "type": "string" },
           "branch": { "type": "string" },
           "workspace": { "type": "string" },
+          "lifecycle": { "enum": ["active", "merged", "cleaned"] },
+          "activity": { "enum": ["idle", "locked"] },
+          "workspace_present": { "type": "boolean" },
           "state": { "enum": ["created", "running", "paused", "merged", "cleaned", "missing", "blocked"] },
           "dirty": { "type": ["boolean", "null"] },
           "changed_files": { "type": "array", "items": { "type": "string" } },
           "active_session_id": { "type": ["string", "null"] },
+          "active_session": { "type": ["object", "null"] },
           "latest_session_id": { "type": ["string", "null"] },
+          "latest_session": { "type": ["object", "null"] },
           "report_available": { "type": "boolean" },
+          "latest_report": { "type": "object", "required": ["available", "trust", "summary"] },
           "merged_commit": { "type": ["string", "null"] },
-          "blockers": { "type": "array", "items": { "type": "string" } }
+          "recovery_points": { "type": "integer" },
+          "divergence": { "type": "object", "required": ["source_state", "base_commit", "source_tip", "source_ahead_of_base", "source_behind_base", "task_tip", "task_relation_to_source", "task_ahead_of_source", "task_behind_source"] },
+          "overlaps": { "type": "array" },
+          "warnings": { "type": "array" },
+          "blockers": { "type": "array", "items": { "type": "string" } },
+          "next_action": { "type": "string" }
         }
       }
     }

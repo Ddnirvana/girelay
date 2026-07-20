@@ -554,6 +554,15 @@ fn archive_points(source: &Path) -> Result<Vec<RecoveryPoint>> {
     Ok(points)
 }
 
+pub fn count_for_task(source: &Path, task_id: &str) -> usize {
+    ref_points(source)
+        .unwrap_or_default()
+        .into_iter()
+        .chain(archive_points(source).unwrap_or_default())
+        .filter(|point| point.task_id == task_id)
+        .count()
+}
+
 fn created_from_unique_id(value: &str) -> Option<String> {
     let mut numeric_parts = value.rsplit('-').filter(|part| {
         !part.is_empty() && part.chars().all(|character| character.is_ascii_digit())

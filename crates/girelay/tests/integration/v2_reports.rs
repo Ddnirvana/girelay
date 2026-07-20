@@ -161,3 +161,37 @@ rm -f "$report" "$report.err""#,
         serde_json::from_str(&run_ok(&repo.root, &["status", "required", "--json"])).unwrap();
     assert_eq!(status["tasks"][0]["report_available"], false);
 }
+
+#[test]
+fn detailed_status_labels_agent_report_and_exposes_session_facts() {
+    let repo = Repo::new();
+    repo.start("status-report");
+    let binary = girelay();
+    let script = format!(
+        r#"
+report="${{TMPDIR:-/tmp}}/status-$GIRELAY_SESSION_ID.json"
+printf '{{"schema_version":2,"task_id":"%s","session_id":"%s","agent":"sh","start_snapshot":"%s","end_snapshot":null,"summary":"Implemented the parser path.","completed":["parser"],"remaining":[],"decisions":[],"failed_attempts":[],"blockers":[],"tests":["test parser"],"risks":[],"next_action":"review","trust":"reported-by-agent"}}' "$GIRELAY_TASK_ID" "$GIRELAY_SESSION_ID" "$GIRELAY_START_SNAPSHOT" > "$report"
+"{}" report --session "$GIRELAY_SESSION_ID" --file "$report"
+rm -f "$report"
+"#,
+        binary.display()
+    );
+    run_ok(
+        &repo.root,
+        &["relay", "status-report", "--", "sh", "-c", &script],
+    );
+    let value: Value =
+        serde_json::from_str(&run_ok(&repo.root, &["status", "status-report", "--json"])).unwrap();
+    let task = &value["tasks"][0];
+    assert_eq!(task["latest_session"]["agent"], "sh");
+    assert_eq!(task["latest_session"]["state"], "completed");
+    assert_eq!(task["latest_report"]["trust"], "reported-by-agent");
+    assert_eq!(
+        task["latest_report"]["summary"],
+        "Implemented the parser path."
+    );
+    assert!(task["next_action"].as_str().unwrap().contains("--dry-run"));
+    let human = run_ok(&repo.root, &["status", "status-report"]);
+    assert!(human.contains("Agent-reported summary: Implemented the parser path."));
+    assert!(human.contains("Latest result: completed"));
+}

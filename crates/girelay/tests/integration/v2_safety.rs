@@ -31,6 +31,34 @@ fn default_clean_removes_worktree_but_retains_branch() {
 }
 
 #[test]
+fn status_distinguishes_unexpectedly_missing_and_deliberately_cleaned_worktrees() {
+    let repo = Repo::new();
+    let missing = repo.start("unexpected-missing");
+    git(
+        &repo.root,
+        &["worktree", "remove", missing.to_str().unwrap()],
+    );
+    let status: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &["status", "unexpected-missing", "--json"],
+    ))
+    .unwrap();
+    assert_eq!(status["tasks"][0]["state"], "missing");
+    assert_eq!(status["tasks"][0]["lifecycle"], "active");
+
+    let cleaned = repo.start("expected-cleaned");
+    run_ok(&repo.root, &["clean", "expected-cleaned"]);
+    assert!(!cleaned.exists());
+    let status: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &["status", "expected-cleaned", "--json"],
+    ))
+    .unwrap();
+    assert_eq!(status["tasks"][0]["state"], "cleaned");
+    assert_eq!(status["tasks"][0]["lifecycle"], "cleaned");
+}
+
+#[test]
 fn discard_uncommitted_is_explicit_and_retains_committed_branch() {
     let repo = Repo::new();
     let workspace = repo.start("discard-dirty");
@@ -554,6 +582,9 @@ fn recovery_list_reports_readable_inventory_age_count_and_storage() {
     assert!(human.contains("Recovery points:"));
     assert!(human.contains("Approximate storage:"));
     assert!(human.contains("id: refs/girelay/snapshots/inventory/"));
+    let status: Value =
+        serde_json::from_str(&run_ok(&repo.root, &["status", "inventory", "--json"])).unwrap();
+    assert_eq!(status["tasks"][0]["recovery_points"], value["count"]);
 }
 
 #[test]

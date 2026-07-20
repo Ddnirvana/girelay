@@ -125,3 +125,8 @@ pub fn report_file(source: &Path, task_id: &str, session_id: &str) -> PathBuf {
         .join(task_id)
         .join(format!("{session_id}.json"))
 }
+
+pub fn load(source: &Path, task_id: &str, session_id: &str) -> Result<AgentReport> {
+    let path = report_file(source, task_id, session_id);
+    serde_json::from_slice(&fs::read(&path)?).map_err(Into::into)
+}
