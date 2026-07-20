@@ -108,12 +108,13 @@ pub fn run_session(source: &Path, mut record: task::Task, command: Vec<String>) 
             "GIRELAY_REPORT_COMMAND",
             format!("girelay report --session {session_id} --file"),
         )
+        .env(
+            "GIRELAY_PREVIOUS_REPORT",
+            previous_report.as_deref().unwrap_or_else(|| Path::new("")),
+        )
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
-    if let Some(path) = &previous_report {
-        child.env("GIRELAY_PREVIOUS_REPORT", path);
-    }
     let spawned = child.spawn();
     let (status, launch_error) = match spawned {
         Ok(mut process) => {

@@ -105,6 +105,52 @@ rm -f "$report""#,
 }
 
 #[test]
+fn every_session_receives_the_stable_generic_adapter_environment() {
+    let repo = Repo::new();
+    let capture = r#"printf '%s\n' \
+  "$GIRELAY_TASK_ID" \
+  "$GIRELAY_SESSION_ID" \
+  "$GIRELAY_INTENT" \
+  "$GIRELAY_SOURCE_REPO" \
+  "$GIRELAY_START_SNAPSHOT" \
+  "$GIRELAY_PREVIOUS_REPORT" \
+  "$GIRELAY_REPORT_COMMAND" > adapter-env.txt"#;
+    run_ok(
+        &repo.root,
+        &[
+            "start",
+            "adapter-env",
+            "--intent",
+            "Verify the generic adapter contract",
+            "--",
+            "sh",
+            "-c",
+            capture,
+        ],
+    );
+    let workspace = repo.root.join(".girelay/workspaces/adapter-env");
+    let values: Vec<_> = fs::read_to_string(workspace.join("adapter-env.txt"))
+        .unwrap()
+        .lines()
+        .map(str::to_string)
+        .collect();
+    assert_eq!(values.len(), 7);
+    assert_eq!(values[0], "adapter-env");
+    assert!(!values[1].is_empty());
+    assert_eq!(values[2], "Verify the generic adapter contract");
+    assert_eq!(
+        std::path::Path::new(&values[3]).canonicalize().unwrap(),
+        repo.root.canonicalize().unwrap()
+    );
+    assert!(!values[4].is_empty());
+    assert_eq!(values[5], "");
+    assert_eq!(
+        values[6],
+        format!("girelay report --session {} --file", values[1])
+    );
+}
+
+#[test]
 fn duplicate_report_submission_is_rejected_as_immutable() {
     let repo = Repo::new();
     let binary = girelay();
