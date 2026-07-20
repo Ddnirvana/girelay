@@ -134,13 +134,73 @@ pub fn ensure_commit_identity(repo: &Path) -> Result<()> {
 }
 
 pub fn changed_files(repo: &Path, base: &str, head: &str) -> Result<Vec<String>> {
+    let output = Command::new("git")
+        .args(["diff", "--name-status", "-z", base, head])
+        .current_dir(repo)
+        .output()
+        .context("failed to inspect changed paths")?;
+    if !output.status.success() {
+        return Err(anyhow!(
+            "git diff --name-status failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+    parse_name_status(&output.stdout)
+}
+
+fn parse_name_status(output: &[u8]) -> Result<Vec<String>> {
+    let fields: Vec<&[u8]> = output.split(|byte| *byte == 0).collect();
+    let mut paths = Vec::new();
+    let mut index = 0;
+    while index < fields.len() && !fields[index].is_empty() {
+        let status = fields[index];
+        index += 1;
+        let path_count = if matches!(status.first(), Some(b'R' | b'C')) {
+            2
+        } else {
+            1
+        };
+        for _ in 0..path_count {
+            let path = fields
+                .get(index)
+                .filter(|value| !value.is_empty())
+                .ok_or_else(|| anyhow!("Git name-status record is missing a path"))?;
+            paths.push(String::from_utf8_lossy(path).to_string());
+            index += 1;
+        }
+    }
+    paths.sort();
+    paths.dedup();
+    Ok(paths)
+}
+
+pub fn rev_counts(repo: &Path, left: &str, right: &str) -> Result<(u64, u64)> {
+    let range = format!("{left}...{right}");
+    let out = run(repo, &["rev-list", "--left-right", "--count", &range])?;
+    let mut values = out.stdout.split_whitespace();
+    let left_only = values
+        .next()
+        .ok_or_else(|| anyhow!("Git rev-list omitted the left count"))?
+        .parse()?;
+    let right_only = values
+        .next()
+        .ok_or_else(|| anyhow!("Git rev-list omitted the right count"))?
+        .parse()?;
+    Ok((left_only, right_only))
+}
+
+pub fn merge_base(repo: &Path, left: &str, right: &str) -> Result<String> {
+    Ok(run(repo, &["merge-base", left, right])?.stdout)
+}
+
+pub fn commit_summaries(repo: &Path, base: &str, head: &str) -> Result<Vec<(String, String)>> {
     let range = format!("{base}..{head}");
-    let out = run(repo, &["diff", "--name-only", &range])?.stdout;
+    let out = run(repo, &["log", "--format=%H%x09%s", "--reverse", &range])?;
     Ok(out
+        .stdout
         .lines()
-        .map(str::trim)
-        .filter(|line| !line.is_empty())
-        .map(ToString::to_string)
+        .filter_map(|line| line.split_once('\t'))
+        .map(|(commit, subject)| (commit.to_string(), subject.to_string()))
         .collect())
 }
 

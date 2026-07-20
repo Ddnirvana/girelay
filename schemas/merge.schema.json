@@ -3,7 +3,7 @@
   "$id": "https://github.com/Ddnirvana/girelay/schemas/merge.schema.json",
   "title": "girelay merge result v2",
   "type": "object",
-  "required": ["schema_version", "task_id", "strategy", "target_branch", "source_before", "source_after", "task_tip", "changed_files", "checks", "task_rollback_ref", "source_rollback_ref"],
+  "required": ["schema_version", "task_id", "strategy", "target_branch", "source_before", "source_after", "task_tip", "message", "changed_files", "checks", "warnings", "task_rollback_ref", "source_rollback_ref"],
   "properties": {
     "schema_version": { "const": 2 },
     "task_id": { "type": "string" },
@@ -12,8 +12,10 @@
     "source_before": { "type": "string" },
     "source_after": { "type": "string" },
     "task_tip": { "type": "string" },
+    "message": { "type": "string" },
     "changed_files": { "type": "array", "items": { "type": "string" } },
     "checks": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array" },
     "task_rollback_ref": { "type": "string" },
     "source_rollback_ref": { "type": "string" }
   }

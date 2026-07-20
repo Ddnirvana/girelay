@@ -277,6 +277,155 @@ fn cleanup_dry_run_is_non_mutating() {
 }
 
 #[test]
+fn merge_dry_run_is_non_mutating_and_does_not_execute_checks() {
+    for strategy in ["squash", "preserve"] {
+        let repo = Repo::new();
+        let task_id = format!("preview-{strategy}");
+        let workspace = repo.start(&task_id);
+        write(&workspace.join("preview.txt"), "preview\n");
+        let config_path = repo.root.join(".girelay/config.toml");
+        let config = fs::read_to_string(&config_path).unwrap();
+        fs::write(
+            &config_path,
+            config.replace(
+                "check_commands = []",
+                "check_commands = [\"printf ran > check-ran.txt\"]",
+            ),
+        )
+        .unwrap();
+        let source_head = git(&repo.root, &["rev-parse", "HEAD"]);
+        let task_head = git(&workspace, &["rev-parse", "HEAD"]);
+        let task_status = git(&workspace, &["status", "--porcelain=v1"]);
+        let metadata_path = repo
+            .root
+            .join(".girelay/tasks")
+            .join(format!("{task_id}.json"));
+        let metadata = fs::read(&metadata_path).unwrap();
+        let refs_before = git(
+            &repo.root,
+            &[
+                "for-each-ref",
+                "--format=%(refname)%09%(objectname)",
+                "refs/girelay/",
+            ],
+        );
+
+        let preview: Value = serde_json::from_str(&run_ok(
+            &repo.root,
+            &[
+                "merge",
+                &task_id,
+                "--strategy",
+                strategy,
+                "--dry-run",
+                "--json",
+            ],
+        ))
+        .unwrap();
+        assert_eq!(preview["kind"], "merge-plan");
+        assert_eq!(preview["strategy"], strategy);
+        assert_eq!(preview["final_task_commit_required"], true);
+        assert_eq!(preview["checks"][0]["state"], "pending");
+        assert!(
+            preview["task_rollback_ref"]
+                .as_str()
+                .unwrap()
+                .ends_with("/<merge-id>")
+        );
+        assert_eq!(git(&repo.root, &["rev-parse", "HEAD"]), source_head);
+        assert_eq!(git(&workspace, &["rev-parse", "HEAD"]), task_head);
+        assert_eq!(git(&workspace, &["status", "--porcelain=v1"]), task_status);
+        assert_eq!(fs::read(metadata_path).unwrap(), metadata);
+        assert_eq!(
+            git(
+                &repo.root,
+                &[
+                    "for-each-ref",
+                    "--format=%(refname)%09%(objectname)",
+                    "refs/girelay/"
+                ],
+            ),
+            refs_before
+        );
+        assert!(!workspace.join("check-ran.txt").exists());
+        assert!(
+            !repo
+                .root
+                .join(".girelay/locks")
+                .join(format!("{task_id}.lock"))
+                .exists()
+        );
+        let temporary_entries: Vec<_> = fs::read_dir(repo.root.join(".girelay/tmp"))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().to_string())
+            .collect();
+        assert!(
+            temporary_entries
+                .iter()
+                .all(|name| !name.starts_with("merge-preflight-")),
+            "merge preview left temporary index files: {temporary_entries:?}"
+        );
+    }
+}
+
+#[test]
+fn merge_messages_distinguish_arguments_explicit_intent_and_task_id_defaults() {
+    let repo = Repo::new();
+    run_ok(&repo.root, &["start", "default-message"]);
+    let default_workspace = repo.workspace("default-message");
+    write(&default_workspace.join("default.txt"), "default\n");
+    let default_preview: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &["merge", "default-message", "--dry-run", "--json"],
+    ))
+    .unwrap();
+    assert_eq!(
+        default_preview["proposed_message"],
+        "agent: complete default-message"
+    );
+    assert_eq!(default_preview["message_source"], "task-id");
+    run_ok(&repo.root, &["merge", "default-message"]);
+    assert_eq!(
+        git(&repo.root, &["log", "-1", "--pretty=%s"]),
+        "agent: complete default-message"
+    );
+
+    run_ok(
+        &repo.root,
+        &[
+            "start",
+            "explicit-message",
+            "--intent",
+            "Fix explicit behavior",
+        ],
+    );
+    let explicit_workspace = repo.workspace("explicit-message");
+    write(&explicit_workspace.join("explicit.txt"), "explicit\n");
+    let explicit: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &["merge", "explicit-message", "--dry-run", "--json"],
+    ))
+    .unwrap();
+    assert_eq!(explicit["proposed_message"], "Fix explicit behavior");
+    assert_eq!(explicit["message_source"], "intent");
+
+    let provided: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &[
+            "merge",
+            "explicit-message",
+            "--message",
+            "fix: provided message",
+            "--dry-run",
+            "--json",
+        ],
+    ))
+    .unwrap();
+    assert_eq!(provided["proposed_message"], "fix: provided message");
+    assert_eq!(provided["message_source"], "argument");
+}
+
+#[test]
 fn tampered_archive_is_refused_before_restore() {
     let repo = Repo::new();
     let workspace = repo.start("tamper");

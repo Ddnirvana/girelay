@@ -110,6 +110,13 @@ fn runtime_json_and_metadata_match_all_v2_schemas() {
     .unwrap();
     assert_schema(&clean_plan, &schema("clean-plan.schema.json"), "clean-plan");
 
+    let merge_plan: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &["merge", "contracts", "--dry-run", "--json"],
+    ))
+    .unwrap();
+    assert_schema(&merge_plan, &schema("merge-plan.schema.json"), "merge-plan");
+
     let merged: Value =
         serde_json::from_str(&run_ok(&repo.root, &["merge", "contracts", "--json"])).unwrap();
     assert_schema(&merged, &schema("merge.schema.json"), "merge");
@@ -162,6 +169,7 @@ fn every_published_schema_is_a_valid_draft_2020_document() {
         "archive-manifest.schema.json",
         "clean-plan.schema.json",
         "lock.schema.json",
+        "merge-plan.schema.json",
         "merge.schema.json",
         "recovery.schema.json",
         "report.schema.json",

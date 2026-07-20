@@ -81,10 +81,16 @@ pub struct MergeArgs {
     pub task_id: String,
     #[arg(long, value_enum, default_value_t = MergeStrategy::Squash)]
     pub strategy: MergeStrategy,
+    /// Commit message; defaults to explicit intent or `agent: complete <task>`.
     #[arg(long)]
     pub message: Option<String>,
+    /// Skip configured checks explicitly.
     #[arg(long)]
     pub no_checks: bool,
+    /// Preview the merge without changing files, refs, commits, or metadata.
+    #[arg(long)]
+    pub dry_run: bool,
+    /// Emit the preview or real merge result as JSON.
     #[arg(long)]
     pub json: bool,
 }
