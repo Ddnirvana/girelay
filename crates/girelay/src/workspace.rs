@@ -77,6 +77,6 @@ pub fn start(args: StartArgs) -> Result<()> {
         println!("Next: girelay relay {} -- <agent>", record.id);
         Ok(())
     } else {
-        session::run_session(&source, record, args.command, false)
+        session::run_session(&source, record, args.command)
     }
 }

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ddnirvana/girelay/schemas/lock.schema.json",
+  "title": "girelay stale-lock inspection v2",
+  "type": "object",
+  "required": ["schema_version", "task_id", "operation", "parent_pid", "parent_alive", "child_pid", "child_alive", "created_at", "active_session_id", "recoverable", "unlocked"],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "task_id": { "type": "string" },
+    "operation": { "type": "string" },
+    "parent_pid": { "type": "integer" },
+    "parent_alive": { "type": "boolean" },
+    "child_pid": { "type": ["integer", "null"] },
+    "child_alive": { "type": "boolean" },
+    "created_at": { "type": "string" },
+    "active_session_id": { "type": ["string", "null"] },
+    "recoverable": { "type": "boolean" },
+    "unlocked": { "type": "boolean" }
+  }
+}

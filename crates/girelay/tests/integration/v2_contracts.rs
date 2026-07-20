@@ -141,6 +141,19 @@ fn runtime_json_and_metadata_match_all_v2_schemas() {
         &schema("archive-manifest.schema.json"),
         "archive",
     );
+
+    repo.start("lock-contract");
+    fs::write(
+        repo.root.join(".girelay/locks/lock-contract.lock"),
+        r#"{"schema_version":1,"operation":"cleanup","parent_pid":4294967295,"child_pid":null,"created_at":"1"}"#,
+    )
+    .unwrap();
+    let lock: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &["recover", "unlock", "lock-contract", "--json"],
+    ))
+    .unwrap();
+    assert_schema(&lock, &schema("lock.schema.json"), "lock");
 }
 
 #[test]
@@ -148,6 +161,7 @@ fn every_published_schema_is_a_valid_draft_2020_document() {
     for name in [
         "archive-manifest.schema.json",
         "clean-plan.schema.json",
+        "lock.schema.json",
         "merge.schema.json",
         "recovery.schema.json",
         "report.schema.json",

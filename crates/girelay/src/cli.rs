@@ -26,7 +26,7 @@ pub enum Commands {
     Status(StatusArgs),
     /// Remove a task worktree, retaining its branch by default.
     Clean(CleanArgs),
-    /// Inspect or restore snapshots, rollback refs, and cleanup archives.
+    /// Inspect recovery state, restore it, or repair a stale operation lock.
     Recover(RecoverArgs),
     /// Submit a schema-validated semantic report for the active session.
     #[command(hide = true)]
@@ -66,8 +66,6 @@ pub struct StartArgs {
 #[command(trailing_var_arg = true)]
 pub struct RelayArgs {
     pub task_id: String,
-    #[arg(long)]
-    pub recover_stale_session: bool,
     #[arg(required = true, allow_hyphen_values = true)]
     pub command: Vec<String>,
 }
@@ -117,8 +115,6 @@ pub struct CleanArgs {
     pub dry_run: bool,
     #[arg(long)]
     pub json: bool,
-    #[arg(long)]
-    pub recover_stale_session: bool,
 }
 
 #[derive(Debug, Args)]
@@ -146,6 +142,16 @@ pub enum RecoverCommand {
         recovery_id: String,
         #[arg(long)]
         confirm: bool,
+    },
+    /// Inspect or recover a stale task-operation lock.
+    Unlock {
+        task_id: String,
+        /// Recover only after both recorded processes are no longer running.
+        #[arg(long)]
+        confirm: bool,
+        /// Emit schema-v2 lock inspection JSON.
+        #[arg(long)]
+        json: bool,
     },
 }
 

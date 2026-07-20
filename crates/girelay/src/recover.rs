@@ -1,5 +1,5 @@
 use crate::cli::{RecoverArgs, RecoverCommand};
-use crate::{clean, git, output, task, workspace_lock};
+use crate::{clean, git, output, session, task, workspace_lock};
 use anyhow::{Context, Result, anyhow};
 use serde::Serialize;
 use std::fs;
@@ -21,6 +21,21 @@ struct RecoveryList {
     recovery_points: Vec<RecoveryPoint>,
 }
 
+#[derive(Debug, Serialize)]
+struct LockInspection {
+    schema_version: u32,
+    task_id: String,
+    operation: String,
+    parent_pid: u32,
+    parent_alive: bool,
+    child_pid: Option<u32>,
+    child_alive: bool,
+    created_at: String,
+    active_session_id: Option<String>,
+    recoverable: bool,
+    unlocked: bool,
+}
+
 pub fn recover(args: RecoverArgs) -> Result<()> {
     let source = git::source_repo(Path::new("."))?;
     match args.command {
@@ -30,6 +45,11 @@ pub fn recover(args: RecoverArgs) -> Result<()> {
             recovery_id,
             confirm,
         } => restore(&source, &recovery_id, confirm),
+        RecoverCommand::Unlock {
+            task_id,
+            confirm,
+            json,
+        } => unlock(&source, &task_id, confirm, json),
     }
 }
 
@@ -75,6 +95,97 @@ fn show(source: &Path, id: &str, json: bool) -> Result<()> {
     Ok(())
 }
 
+fn unlock(source: &Path, task_id: &str, confirm: bool, json: bool) -> Result<()> {
+    task::validate_task_id(task_id)?;
+    let mut record = task::load(source, task_id)?;
+    let lock = workspace_lock::read(source, task_id)?;
+    let parent_alive = workspace_lock::process_alive(lock.parent_pid);
+    let child_alive = lock.child_pid.is_some_and(workspace_lock::process_alive);
+    let mut inspection = LockInspection {
+        schema_version: task::SCHEMA_VERSION,
+        task_id: task_id.into(),
+        operation: lock.operation.clone(),
+        parent_pid: lock.parent_pid,
+        parent_alive,
+        child_pid: lock.child_pid,
+        child_alive,
+        created_at: lock.created_at.clone(),
+        active_session_id: record.active_session_id.clone(),
+        recoverable: !parent_alive && !child_alive,
+        unlocked: false,
+    };
+    if !confirm {
+        if json {
+            return output::json(&inspection);
+        }
+        print_lock(&inspection);
+        if inspection.recoverable {
+            println!("Next: girelay recover unlock {task_id} --confirm");
+        } else {
+            println!("No unlock is available while a recorded process is alive.");
+        }
+        return Ok(());
+    }
+    if !inspection.recoverable {
+        return Err(anyhow!(
+            "refusing to unlock task '{}': a recorded parent or child process is still alive",
+            task_id
+        ));
+    }
+    let claim = workspace_lock::claim_stale(source, task_id, &lock)?;
+    let interrupted_session = session::close_interrupted_session(source, &record)?;
+    if let Some(interrupted) = interrupted_session.as_ref() {
+        record.active_session_id = None;
+        record.latest_session_id = Some(interrupted.clone());
+        record.updated_at = task::timestamp();
+        task::save(source, &record)?;
+    }
+    claim.finish()?;
+    inspection.unlocked = true;
+    inspection.active_session_id = None;
+    if json {
+        output::json(&inspection)
+    } else {
+        print_lock(&inspection);
+        if interrupted_session.is_some() {
+            println!("Unlocked task {task_id}; interrupted session state was preserved.");
+        } else {
+            println!("Unlocked stale {} lock for task {task_id}.", lock.operation);
+        }
+        Ok(())
+    }
+}
+
+fn print_lock(value: &LockInspection) {
+    println!("Task: {}", value.task_id);
+    println!("Operation: {}", value.operation);
+    println!("Created: {}", value.created_at);
+    println!(
+        "Parent PID: {} ({})",
+        value.parent_pid,
+        if value.parent_alive {
+            "alive"
+        } else {
+            "not running"
+        }
+    );
+    if let Some(pid) = value.child_pid {
+        println!(
+            "Child PID: {} ({})",
+            pid,
+            if value.child_alive {
+                "alive"
+            } else {
+                "not running"
+            }
+        );
+    }
+    println!(
+        "Recoverable: {}",
+        if value.recoverable { "yes" } else { "no" }
+    );
+}
+
 fn restore(source: &Path, id: &str, confirm: bool) -> Result<()> {
     if !confirm {
         return Err(anyhow!(
@@ -97,7 +208,7 @@ fn restore(source: &Path, id: &str, confirm: bool) -> Result<()> {
 
 fn restore_source(source: &Path, task_id: &str, id: &str, object: &str) -> Result<()> {
     let mut record = task::load(source, task_id)?;
-    let _lock = workspace_lock::acquire(source, task_id, false, "source-recovery")?;
+    let _lock = workspace_lock::acquire(source, task_id, "source-recovery")?;
     let merged = record
         .merge
         .clone()
@@ -178,7 +289,7 @@ fn restore_archive(source: &Path, archive_id: &str) -> Result<()> {
     } else {
         archived
     };
-    let _lock = workspace_lock::acquire(source, &record.id, false, "archive-recovery")?;
+    let _lock = workspace_lock::acquire(source, &record.id, "archive-recovery")?;
     if record.workspace_path.exists() {
         return Err(anyhow!(
             "workspace already exists at {}",

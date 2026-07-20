@@ -113,20 +113,30 @@ fn concurrent_session_is_refused_and_killed_parent_is_recoverable() {
     assert_eq!(second.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&second.stderr).contains("active or stale operation"));
 
+    let inspection: Value = serde_json::from_str(&run_ok(
+        &repo.root,
+        &["recover", "unlock", "locked", "--json"],
+    ))
+    .unwrap();
+    assert_eq!(inspection["operation"], "agent-session");
+    assert_eq!(inspection["recoverable"], false);
+    let human = run_ok(&repo.root, &["recover", "unlock", "locked"]);
+    assert!(human.contains("No unlock is available"));
+    assert!(!human.contains("--confirm"));
+    let refusal =
+        crate::common::run_fail(&repo.root, &["recover", "unlock", "locked", "--confirm"]);
+    assert!(refusal.contains("still alive"));
+
+    let child_pid = inspection["child_pid"].as_u64().unwrap().to_string();
     child.kill().unwrap();
     child.wait().unwrap();
+    Command::new("kill").arg(child_pid).status().unwrap();
+    thread::sleep(Duration::from_millis(100));
     assert!(lock.exists());
+    run_ok(&repo.root, &["recover", "unlock", "locked", "--confirm"]);
     run_ok(
         &repo.root,
-        &[
-            "relay",
-            "locked",
-            "--recover-stale-session",
-            "--",
-            "git",
-            "status",
-            "--short",
-        ],
+        &["relay", "locked", "--", "git", "status", "--short"],
     );
     let sessions = repo.root.join(".girelay/sessions/locked");
     let states: Vec<String> = fs::read_dir(sessions)
@@ -155,22 +165,34 @@ fn cleanup_stale_recovery_closes_interrupted_session_metadata() {
         .spawn()
         .unwrap();
     let task_path = repo.root.join(".girelay/tasks/clean-stale.json");
+    let lock_path = repo.root.join(".girelay/locks/clean-stale.lock");
     for _ in 0..100 {
         let published = fs::read_to_string(&task_path)
             .ok()
             .and_then(|body| serde_json::from_str::<Value>(&body).ok())
             .is_some_and(|value| value["active_session_id"].is_string());
-        if published {
+        let child_recorded = fs::read_to_string(&lock_path)
+            .ok()
+            .and_then(|body| serde_json::from_str::<Value>(&body).ok())
+            .is_some_and(|value| value["child_pid"].is_u64());
+        if published && child_recorded {
             break;
         }
         thread::sleep(Duration::from_millis(20));
     }
     child.kill().unwrap();
     child.wait().unwrap();
+    let lock: Value = serde_json::from_str(&fs::read_to_string(lock_path).unwrap()).unwrap();
+    Command::new("kill")
+        .arg(lock["child_pid"].as_u64().unwrap().to_string())
+        .status()
+        .unwrap();
+    thread::sleep(Duration::from_millis(100));
     run_ok(
         &repo.root,
-        &["clean", "clean-stale", "--recover-stale-session"],
+        &["recover", "unlock", "clean-stale", "--confirm"],
     );
+    run_ok(&repo.root, &["clean", "clean-stale"]);
     assert!(!workspace.exists());
     let task: Value = serde_json::from_str(&fs::read_to_string(task_path).unwrap()).unwrap();
     assert!(task["active_session_id"].is_null());
@@ -185,4 +207,71 @@ fn cleanup_stale_recovery_closes_interrupted_session_metadata() {
     )
     .unwrap();
     assert_eq!(session["state"], "interrupted");
+}
+
+#[test]
+fn stale_non_session_locks_are_recovered_through_one_operation() {
+    let repo = Repo::new();
+    for (task_id, operation) in [
+        ("stale-merge", "merge"),
+        ("stale-cleanup", "cleanup"),
+        ("stale-recovery", "source-recovery"),
+    ] {
+        repo.start(task_id);
+        let lock = repo.root.join(format!(".girelay/locks/{task_id}.lock"));
+        let body = format!(
+            r#"{{
+  "schema_version": 1,
+  "operation": "{operation}",
+  "parent_pid": 4294967295,
+  "child_pid": null,
+  "created_at": "1"
+}}"#
+        );
+        fs::write(&lock, body).unwrap();
+        let inspected: Value = serde_json::from_str(&run_ok(
+            &repo.root,
+            &["recover", "unlock", task_id, "--json"],
+        ))
+        .unwrap();
+        assert_eq!(inspected["operation"], operation);
+        assert_eq!(inspected["recoverable"], true);
+        assert!(lock.exists());
+        let output = run_ok(&repo.root, &["recover", "unlock", task_id, "--confirm"]);
+        assert!(output.contains(&format!("Unlocked stale {operation} lock")));
+        assert!(!output.contains("interrupted session state was preserved"));
+        assert!(!lock.exists());
+    }
+}
+
+#[test]
+fn failed_stale_session_repair_restores_the_original_lock() {
+    let repo = Repo::new();
+    repo.start("repair-failure");
+    let task_path = repo.root.join(".girelay/tasks/repair-failure.json");
+    let mut task: Value = serde_json::from_str(&fs::read_to_string(&task_path).unwrap()).unwrap();
+    task["active_session_id"] = Value::String("missing-session".into());
+    fs::write(&task_path, serde_json::to_vec_pretty(&task).unwrap()).unwrap();
+
+    let lock = repo.root.join(".girelay/locks/repair-failure.lock");
+    let original = r#"{
+  "schema_version": 1,
+  "operation": "agent-session",
+  "parent_pid": 4294967295,
+  "child_pid": null,
+  "created_at": "1"
+}"#;
+    fs::write(&lock, original).unwrap();
+    let error = crate::common::run_fail(
+        &repo.root,
+        &["recover", "unlock", "repair-failure", "--confirm"],
+    );
+    assert!(error.contains("missing-session"));
+    assert_eq!(fs::read_to_string(&lock).unwrap(), original);
+    assert_eq!(
+        fs::read_dir(repo.root.join(".girelay/locks"))
+            .unwrap()
+            .count(),
+        1
+    );
 }

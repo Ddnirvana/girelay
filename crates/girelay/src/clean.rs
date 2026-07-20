@@ -61,16 +61,7 @@ pub fn clean(args: CleanArgs) -> Result<()> {
         };
     }
     reject(&preview)?;
-    let _lock =
-        workspace_lock::acquire(&source, &record.id, args.recover_stale_session, "cleanup")?;
-    if args.recover_stale_session {
-        if let Some(interrupted) = session::close_interrupted_session(&source, &record)? {
-            record.active_session_id = None;
-            record.latest_session_id = Some(interrupted);
-            record.updated_at = task::timestamp();
-            task::save(&source, &record)?;
-        }
-    }
+    let _lock = workspace_lock::acquire(&source, &record.id, "cleanup")?;
     let locked = plan(&source, &record, &args)?;
     reject(&locked)?;
 

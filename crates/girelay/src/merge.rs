@@ -61,7 +61,7 @@ pub fn merge(args: MergeArgs) -> Result<()> {
             record.branch
         ));
     }
-    let _lock = workspace_lock::acquire(&source, &record.id, false, "merge")?;
+    let _lock = workspace_lock::acquire(&source, &record.id, "merge")?;
     let cfg = config::load(&source)?;
     git::ensure_commit_identity(&source)?;
     let source_before = git::head_commit(&source, "HEAD")?;

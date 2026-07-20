@@ -37,15 +37,10 @@ pub fn relay(args: RelayArgs) -> Result<()> {
     task::validate_task_id(&args.task_id)?;
     let source = git::source_repo(Path::new("."))?;
     let record = task::load(&source, &args.task_id)?;
-    run_session(&source, record, args.command, args.recover_stale_session)
+    run_session(&source, record, args.command)
 }
 
-pub fn run_session(
-    source: &Path,
-    mut record: task::Task,
-    command: Vec<String>,
-    recover_stale: bool,
-) -> Result<()> {
+pub fn run_session(source: &Path, mut record: task::Task, command: Vec<String>) -> Result<()> {
     if record.merge.is_some() {
         return Err(anyhow!(
             "task '{}' is already merged; start a new task to make more changes",
@@ -64,13 +59,7 @@ pub fn run_session(
     let executable = command
         .first()
         .ok_or_else(|| anyhow!("missing agent command after '--'"))?;
-    let _lock = workspace_lock::acquire(source, &record.id, recover_stale, "agent-session")?;
-    if recover_stale {
-        if let Some(interrupted) = close_interrupted_session(source, &record)? {
-            record.active_session_id = None;
-            record.latest_session_id = Some(interrupted);
-        }
-    }
+    let mut lock = workspace_lock::acquire(source, &record.id, "agent-session")?;
     let session_id = task::unique_id();
     let start_snapshot = snapshot(source, &record, &session_id, "start")?;
     let session_path = session_file(source, &record.id, &session_id);
@@ -104,8 +93,7 @@ pub fn run_session(
     save_session(&session_path, &session)?;
     task::save(source, &record)?;
 
-    println!("Relaying task {} to {}", record.id, session.agent);
-    println!("Workspace: {}", record.workspace_path.display());
+    println!("Launching: {}", session.agent);
     let mut child = Command::new(executable);
     child
         .args(&command[1..])
@@ -125,10 +113,16 @@ pub fn run_session(
     if let Some(path) = &previous_report {
         child.env("GIRELAY_PREVIOUS_REPORT", path);
     }
-    let status = child.status();
-
-    let (status, launch_error) = match status {
-        Ok(status) => (Some(status), None),
+    let spawned = child.spawn();
+    let (status, launch_error) = match spawned {
+        Ok(mut process) => {
+            if let Err(error) = lock.set_child_pid(process.id()) {
+                let _ = process.kill();
+                let _ = process.wait();
+                return Err(error).context("failed to record agent process ownership");
+            }
+            (Some(process.wait()?), None)
+        }
         Err(error) => (None, Some(error)),
     };
     session.finished_at = Some(task::timestamp());
@@ -337,6 +331,7 @@ pub(crate) fn snapshot(
         Ok(commit)
     })();
     let _ = fs::remove_file(&index);
+    let _ = fs::remove_file(index.with_extension("lock"));
     result
 }
 
