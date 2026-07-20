@@ -12,11 +12,18 @@ and `recover` can locate the source through Git's common directory.
 
 ## Task Is Running Or Has A Stale Lock
 
-Do not remove the lock while an agent is alive. After confirming the old parent
-and child processes are gone:
+Do not remove the lock manually. Inspect recorded process ownership first:
 
 ```bash
-girelay relay <task> --recover-stale-session -- <agent>
+girelay recover unlock <task>
+```
+
+If both parent and child are reported as not running, confirm the exceptional
+repair and then continue separately:
+
+```bash
+girelay recover unlock <task> --confirm
+girelay relay <task> -- <agent>
 ```
 
 ## Merge Check Failed
@@ -28,6 +35,10 @@ The source checkout is unchanged. Run the printed check inside
 
 girelay restores the clean source commit. Resolve source/task divergence using
 normal Git inside the task worktree, then retry `merge`.
+
+Preview first with `girelay merge <task> --dry-run`. A confirmed conflict is
+based on committed Git state. A path overlap with another active task is only a
+coordination warning and does not prove a textual conflict.
 
 ## Cleanup Refuses Dirty Work
 

@@ -16,14 +16,19 @@ modify tracked `AGENTS.md` or `CLAUDE.md` files.
 ## `girelay start`
 
 ```bash
-girelay start <task> --intent "<durable intent>"
+girelay start <task>
+girelay start <task> -- <agent> [args...]
 girelay start <task> --intent "<durable intent>" -- <agent> [args...]
-girelay start <task> --intent "<durable intent>" --base <branch> -- <agent>
+girelay start <task> --base <branch> -- <agent>
 ```
 
 Creates `agent/<task>` and a native worktree at
 `.girelay/workspaces/<task>`. With an agent command, it immediately records and
 runs the first session. Without one, use `relay` later.
+
+`--intent` is optional. When omitted, girelay stores the task id verbatim as a
+non-empty durable intent. It does not ask a model to infer or expand it. An
+explicit intent remains preferable when the task id alone is ambiguous.
 
 Refusals include invalid/duplicate task ids, dirty source checkout, detached or
 missing base, existing task branch, linked-worktree invocation, and conflicting
@@ -33,7 +38,6 @@ workspace path.
 
 ```bash
 girelay relay <task> -- <agent> [args...]
-girelay relay <task> --recover-stale-session -- <agent> [args...]
 ```
 
 Runs another session in the existing task worktree. girelay exports:
@@ -48,9 +52,11 @@ GIRELAY_PREVIOUS_REPORT   # only when one exists
 GIRELAY_REPORT_COMMAND
 ```
 
-The child exit code is propagated. Git state is snapshotted even when the child
-fails or cannot start. `--recover-stale-session` removes a task lock only after
-you have independently confirmed the previous process is gone.
+Before launch, girelay prints the task, durable intent, workspace, previous
+agent/result, semantic report availability and trust, changed-file count, and
+next agent. The child exit code is propagated. Git state is snapshotted even
+when the child fails or cannot start. Stale locks are handled only through
+`recover unlock`, never as a normal relay bypass.
 
 ## `girelay status`
 
@@ -75,13 +81,24 @@ Lifecycle states are factual:
 Dirty state, changed files, report availability, active/latest session ids,
 merge commit, and blockers are separate fields rather than overloaded states.
 
+`status <task>` additionally shows intent source, lifecycle/activity, workspace
+presence, latest process facts, agent-reported summary, recovery count, exact
+source/task divergence, overlaps, warnings with evidence and safe next action,
+and one factual suggested command. Missing semantic context is `not-reported`.
+
+Repository status compares changed paths across active tasks, including
+committed, staged, unstaged, renamed, deleted, and untracked paths. An overlap
+is a warning for merge-order review, not proof of conflict or a merge refusal.
+
 ## `girelay merge`
 
 ```bash
 girelay merge <task> --strategy squash
 girelay merge <task> --strategy preserve
 girelay merge <task> --strategy squash --message "fix: clear description"
-girelay merge <task> --json
+girelay merge <task> --dry-run
+girelay merge <task> --dry-run --json
+girelay merge <task> --json             # real merge, JSON result
 ```
 
 Run from the clean source checkout on the task's recorded base branch.
@@ -90,6 +107,17 @@ Run from the clean source checkout on the task's recorded base branch.
 merge and retains task commits. If the worktree is dirty, girelay creates one
 final task commit after checks pass; hidden relay snapshots never become
 intermediate branch commits.
+
+`--dry-run` and the real merge share the same plan builder. Preview shows exact
+commits, proposed message, changed paths and commits, dirty finalization,
+configured checks, source divergence, active-task overlaps, safely confirmed
+committed-state conflicts, deterministic warnings, and conceptual rollback
+refs. It creates no file, commit, ref, lock, or metadata change and does not run
+checks. Checks are labeled `pending` or `skipped`, never passed.
+
+Without `--message`, an explicit durable intent is used verbatim. When intent
+defaulted from the task id, the stable fallback is `agent: complete <task>`.
+Agent reports are never treated as verified commit-message input.
 
 Before integration, girelay:
 
@@ -129,6 +157,8 @@ tips, clean source checkout, matching target branch, and both rollback refs.
 girelay recover list [<task>] [--json]
 girelay recover show <recovery-id> [--json]
 girelay recover restore <recovery-id> --confirm
+girelay recover unlock <task> [--json]
+girelay recover unlock <task> --confirm [--json]
 ```
 
 Recovery ids are printed by `list`. Snapshot and task rollback restoration
@@ -136,6 +166,18 @@ creates a fresh `recovery/<task>/...` branch and worktree without overwriting
 the task. Source pre-merge restoration requires the source to remain exactly at
 the recorded merge result. Cleanup archive restoration verifies SHA-256 and the
 Git bundle before recreating the task worktree.
+
+`list` includes readable ages and restorability, exact recovery ids, total
+count, oldest point, and approximate storage. Storage sums the current loose
+Git object sizes reachable directly through listed refs plus cleanup archive
+directory sizes; shared Git objects and filesystem allocation make it an
+estimate, not reclaimable disk-space accounting.
+
+`unlock` is exceptional recovery for session, merge, cleanup, and recovery
+locks. Inspection reports operation, parent/child PIDs and liveness, creation
+time, and active session. `--confirm` is accepted only when both recorded
+processes are not running. For interrupted sessions, girelay captures recovery
+state and closes metadata before retiring the stale lock.
 
 ## Internal Report Operation
 

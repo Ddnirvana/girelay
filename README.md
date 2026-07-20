@@ -12,9 +12,11 @@ branch, and keeps recovery points before anything destructive happens.
 
 ```bash
 girelay setup codex
-girelay start auth-fix --intent "Fix token refresh races and run auth tests" -- codex
+girelay start auth-fix -- codex
 girelay relay auth-fix -- claude
-girelay merge auth-fix --strategy squash
+girelay status auth-fix
+girelay merge auth-fix --dry-run
+girelay merge auth-fix
 girelay clean auth-fix
 ```
 
@@ -62,10 +64,12 @@ From a clean source checkout on `main`:
 
 ```bash
 girelay setup codex
-girelay start parser-fix \
-  --intent "Recover malformed bodies without changing valid parsing" \
-  -- codex
+girelay start parser-fix -- codex
 ```
+
+The task id is also the durable intent by default. Add `--intent "Recover
+malformed bodies without changing valid parsing"` when the id is not enough
+context for agents.
 
 The worktree is `.girelay/workspaces/parser-fix`. Inspect it with normal Git:
 
@@ -85,9 +89,14 @@ girelay relay parser-fix -- claude
 Then merge from the clean source checkout:
 
 ```bash
+girelay merge parser-fix --dry-run
 girelay merge parser-fix --strategy squash --message "fix: recover malformed bodies"
 girelay clean parser-fix
 ```
+
+The preview reports changed paths, commits, overlap with other active tasks,
+source divergence, deterministic warnings, configured checks, and the rollback
+refs that a real merge would create. It does not run checks or change Git state.
 
 `clean` removes only the worktree. `agent/parser-fix`, snapshots, and rollback
 refs remain. Branch deletion is a separate guarded choice:
@@ -117,12 +126,13 @@ for the complete model and examples.
 | Command | Purpose |
 | --- | --- |
 | `setup <codex|claude>` | Install the semantic relay skill at user scope. |
-| `start <task> --intent ... -- <agent>` | Create a worktree and optionally run the first agent. |
+| `start <task> [--intent ...] -- <agent>` | Create a worktree and optionally run the first agent. |
 | `relay <task> -- <agent>` | Continue the same task in another recorded session. |
-| `status [task] [--json]` | Report factual workspace, session, report, and merge state. |
+| `status [task] [--json]` | Show the repository dashboard or one detailed task view. |
+| `merge <task> --dry-run` | Preview integration, checks, divergence, overlap, and rollback refs. |
 | `merge <task> --strategy squash|preserve` | Check and integrate work into the source branch. |
 | `clean <task>` | Remove the worktree while retaining recoverable Git state. |
-| `recover list|show|restore` | Inspect or restore snapshots, rollback refs, and archives. |
+| `recover list|show|restore|unlock` | Inspect recovery state, restore it, or repair a stale lock. |
 
 See [command reference](docs/commands.md) for flags and refusal behavior.
 The [documentation index](docs/README.md) links the complete user, safety,
@@ -144,10 +154,13 @@ and [evidence-level definitions](docs/agent-compatibility.md).
 Start independent tasks from the same source checkout:
 
 ```bash
-girelay start auth-fix --intent "Fix auth timeout" -- codex
-girelay start docs-sync --intent "Update auth documentation" -- claude
+girelay start auth-fix -- codex
+girelay start docs-sync -- claude
 girelay status
 ```
+
+The dashboard warns when active tasks touch the same path. This is coordination
+evidence, not proof of a textual conflict and never an automatic merge refusal.
 
 Each agent receives a separate files-and-index view. This is Git isolation, not
 a security sandbox: processes still share the machine, network, ports, caches,
@@ -163,6 +176,7 @@ credentials, remotes, and repository refs.
 - dirty cleanup is refused unless archived or explicitly discarded;
 - branch deletion requires an unchanged merge record and matching tips;
 - stale source rollback is refused;
+- live parent or child processes prevent stale-lock recovery;
 - `.girelay/` is excluded locally and never added to tracked project files.
 
 The detailed contract is in [Safety Model](docs/safety.md).

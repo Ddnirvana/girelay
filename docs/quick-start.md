@@ -10,6 +10,13 @@ girelay setup codex
 Create a task and launch the agent in one command:
 
 ```bash
+girelay start login-fix -- codex
+```
+
+Without `--intent`, the exact task id (`login-fix`) becomes the durable intent.
+For a more precise handoff, supply an explicit optional intent:
+
+```bash
 girelay start login-fix \
   --intent "Fix the flaky login timeout and run focused tests" \
   -- codex
@@ -44,8 +51,14 @@ girelay relay login-fix -- claude
 Review the worktree, then merge from the source checkout:
 
 ```bash
+girelay merge login-fix --dry-run
 girelay merge login-fix --strategy squash --message "fix: stabilize login timeout"
 ```
+
+The preview is read-only. It shows the exact source/task commits, proposed
+message, changed paths, configured checks, parallel-task overlap, source
+divergence, confirmed committed-state conflicts, warnings, and conceptual
+rollback refs. Checks remain `pending` until the real merge runs them.
 
 Use `--strategy preserve` when the task's commits are already meaningful and
 should remain in source history.

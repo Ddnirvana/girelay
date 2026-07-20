@@ -12,8 +12,8 @@ printf '# demo\n' > README.md
 git add README.md
 git commit -m "initial commit" >/dev/null
 
-echo '$ girelay start parser-fix --intent "Add parser and tests" -- <agent>'
-girelay start parser-fix --intent "Add parser and tests" -- \
+echo '$ girelay start parser-fix -- <agent>'
+girelay start parser-fix -- \
   sh -c '
     printf "parser\n" > parser.txt
     report="${TMPDIR:-/tmp}/girelay-demo-$GIRELAY_SESSION_ID.json"
@@ -35,6 +35,9 @@ girelay relay parser-fix -- sh -c '
 
 echo '$ girelay status parser-fix'
 girelay status parser-fix
+
+echo '$ girelay merge parser-fix --strategy squash --dry-run'
+girelay merge parser-fix --strategy squash --message "feat: add parser and tests" --dry-run
 
 echo '$ girelay merge parser-fix --strategy squash'
 girelay merge parser-fix --strategy squash --message "feat: add parser and tests"

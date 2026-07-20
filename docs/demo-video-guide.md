@@ -18,6 +18,7 @@ and report claims before publishing. Keep the final frame on:
 
 ```text
 girelay status <task>
+girelay merge <task> --dry-run
 source merge commit
 source rollback ref
 retained task branch after clean

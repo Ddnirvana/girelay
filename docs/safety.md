@@ -25,6 +25,15 @@ real index unchanged.
 
 Hidden commits are recovery evidence, not user-visible checkpoint history.
 
+## Concurrent Task Awareness
+
+Status and merge planning compare committed and working-tree paths across active
+tasks. This includes staged, unstaged, renamed, deleted, and untracked paths.
+Overlap is reported only as a warning: matching paths do not prove a textual
+conflict and never cause an automatic refusal. A separate temporary-index
+preflight reports conflicts confirmed by Git for committed task state. Dirty
+state remains a separate warning.
+
 ## Merge Transaction
 
 `merge` requires:
@@ -46,6 +55,12 @@ check task -> snapshot -> task rollback -> finalize task
 On merge failure, girelay aborts merge state when present and hard-resets only
 the previously verified-clean source checkout to its recorded pre-merge commit.
 The task branch, worktree, snapshots, and rollback refs remain.
+
+`merge --dry-run` uses the same planning code without acquiring a lock, running
+checks, or creating files, refs, commits, merge records, or index changes.
+Configured checks are marked `pending` or `skipped`; preview never claims they
+passed. Source advancement and divergence are reported, but girelay never
+automatically rebases, resets, or rewrites task history.
 
 ## Cleanup
 
@@ -80,6 +95,10 @@ This works for squash merges without relying on ancestry.
 - Archive restore verifies checksum and bundle before changing refs.
 - Existing divergent task branches are never overwritten.
 - Recovery never mutates remotes or force pushes.
+- Stale locks are inspected and recovered only through `recover unlock`.
+- Unlock refuses when a recorded parent or child process is alive.
+- Interrupted sessions are snapshotted and closed before a stale lock is
+  retired; non-session operation locks are retired without inventing a session.
 
 ## Trust Labels
 

@@ -10,6 +10,15 @@ All notable changes to girelay are documented here.
 - Added source-owned schema-v2 task, session, report, merge, cleanup, archive,
   and recovery contracts.
 - Added per-task session/merge/cleanup locking with explicit stale recovery.
+- Added optional intent with task-id fallback and deterministic merge messages.
+- Added detailed single-task status, active-task path overlap, exact source/task
+  divergence, and evidence-backed deterministic merge warnings.
+- Added non-mutating merge previews shared with real merge planning, including
+  pending checks, commits, paths, conflicts, and conceptual rollback refs.
+- Added centralized process-aware stale-lock inspection and recovery through
+  `recover unlock`, including interrupted-session preservation.
+- Added readable recovery age, restorability, count, oldest-point, and
+  approximate-storage reporting while retaining exact refs in detailed output.
 - Added hidden start/end snapshots that preserve uncommitted state without
   adding checkpoint commits to task branches.
 - Added Codex and Claude user-level relay skills and immutable, session-bound

@@ -3,7 +3,7 @@
 Any command-line coding agent can use girelay's environment layer:
 
 ```bash
-girelay start <task> --intent "<task>" -- <agent> [args...]
+girelay start <task> [--intent "<durable intent>"] -- <agent> [args...]
 girelay relay <task> -- <agent> [args...]
 ```
 
@@ -14,7 +14,7 @@ variables and submit a report before it exits.
 
 ```bash
 girelay setup codex
-girelay start parser-fix --intent "Fix parser recovery" -- codex
+girelay start parser-fix -- codex
 ```
 
 The setup command installs a user-level `girelay` skill under
@@ -25,7 +25,7 @@ For non-interactive Codex CLI usage, pass the normal Codex arguments after the
 separator:
 
 ```bash
-girelay start parser-fix --intent "Fix parser recovery" -- \
+girelay start parser-fix --intent "Fix parser recovery without API changes" -- \
   codex exec "Implement the intent, run focused tests, and follow the girelay skill"
 ```
 

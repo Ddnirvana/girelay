@@ -1,27 +1,81 @@
-$ girelay start parser-fix --intent "Add parser and tests" -- <agent>
+$ girelay start parser-fix -- <agent>
 Created task parser-fix
 Workspace: <demo>/repo/.girelay/workspaces/parser-fix
 Branch: agent/parser-fix
-Relaying task parser-fix to sh
+Task: parser-fix
+Intent: parser-fix
 Workspace: <demo>/repo/.girelay/workspaces/parser-fix
-Recorded semantic report for session 1784128331-355222000
-Session: 1784128331-355222000 (completed)
+Previous session: none
+Semantic report: not reported
+Changed files: 0
+Next agent: sh
+Launching: sh
+Recorded semantic report for session 1784544722-761668000
+Session: 1784544722-761668000 (completed)
 Changed files: 1
 $ girelay relay parser-fix -- <next-agent>
-Relaying task parser-fix to sh
+Task: parser-fix
+Intent: parser-fix
 Workspace: <demo>/repo/.girelay/workspaces/parser-fix
-Recorded semantic report for session 1784128331-528113000
-Session: 1784128331-528113000 (completed)
+Previous agent: sh
+Previous result: completed
+Semantic report: available (reported by agent)
+Changed files: 1
+Next agent: sh
+Launching: sh
+Recorded semantic report for session 1784544722-918168000
+Session: 1784544722-918168000 (completed)
 Changed files: 2
 $ girelay status parser-fix
-Task                 State      Dirty  Report   Branch
-parser-fix           paused     yes    yes      agent/parser-fix
+Task: parser-fix
+Intent: parser-fix (task-id)
+State: paused
+Lifecycle: active
+Activity: idle
+Source branch: main
+Task branch: agent/parser-fix
+Workspace: <demo>/repo/.girelay/workspaces/parser-fix
+Workspace present: yes
+Dirty: yes
+Changed files: 2
+  parser-tests.txt
+  parser.txt
+Active session: none
+Latest session: 1784544722-918168000
+Latest agent: sh
+Latest result: completed
+Semantic report: reported-by-agent
+Agent-reported summary: Parser and focused tests are ready for review.
+Source state: unchanged
+Task relation to source: unchanged
+Recovery points: 4
+Warning [dirty-task-state]: task worktree contains uncommitted changes
+  Evidence: parser-tests.txt
+  Evidence: parser.txt
+  Next: review the task diff before relay, merge, or cleanup
+Next: girelay merge parser-fix --dry-run
+$ girelay merge parser-fix --strategy squash --dry-run
+Merge preview for parser-fix
+Target: main
+Strategy: squash
+Message: feat: add parser and tests (argument)
+Task commits: 0
+Changed files: 2
+Dirty task state: yes
+Source state: unchanged
+Checks:
+  none configured
+Warning [dirty-task-state]: uncommitted task work will become a final task commit
+  Next: review the task worktree diff before merging
+Planned task rollback: refs/girelay/rollback/task/parser-fix/<merge-id>
+Planned source rollback: refs/girelay/rollback/source/parser-fix/<merge-id>
+No files, refs, commits, locks, or metadata were changed.
 $ girelay merge parser-fix --strategy squash
 Merged task parser-fix with squash strategy
-Source commit: e6237c21f24ecc0ee92d1e43496d436d7914bda3
-Rollback: refs/girelay/rollback/source/parser-fix/1784128331-817666000
+Source commit: 929fe48ed12225eb6bf07d8904a2b8139f25c5c0
+Rollback: refs/girelay/rollback/source/parser-fix/1784544723-729085000
 $ girelay clean parser-fix
 Cleaned task parser-fix
 Branch: retained
 $ git log -1 --oneline
-e6237c2 feat: add parser and tests
+929fe48 feat: add parser and tests

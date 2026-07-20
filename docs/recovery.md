@@ -22,14 +22,23 @@ girelay relay parser-fix -- <agent>
 ## Agent Process Was Killed
 
 An abruptly killed parent may leave an active session id and task lock. First
-confirm both girelay and the child agent process have stopped. Then:
+inspect the recorded parent and child process facts:
 
 ```bash
-girelay relay parser-fix --recover-stale-session -- <agent>
+girelay recover unlock parser-fix
+girelay recover unlock parser-fix --confirm
 ```
 
-The old session is closed as `interrupted` with a recovery-time snapshot; the
-new session gets a new id and snapshots.
+The confirmed operation refuses while either recorded process is alive. Once
+both are gone, the old session is closed as `interrupted` with a recovery-time
+snapshot and the stale lock is retired. Continue in a separate command:
+
+```bash
+girelay relay parser-fix -- <agent>
+```
+
+The same `recover unlock` operation handles stale merge, cleanup, and recovery
+locks; those have no session metadata to close.
 
 ## Restore A Relay Snapshot
 
@@ -71,3 +80,12 @@ girelay restores the clean source checkout automatically. The task branch and
 source/task rollback refs remain for inspection. Resolve the divergence in the
 task worktree or source history, then retry `merge`; do not delete refs merely
 to bypass the refusal.
+
+## Read The Recovery Inventory
+
+The default list shows type, relative age, restorability, description, and the
+exact recovery id. Its footer shows point count, oldest age, and approximate
+storage. The storage estimate sums listed ref object sizes and cleanup archive
+directories; shared Git objects and filesystem allocation mean it is not a
+prediction of disk space that deletion would reclaim. girelay does not prune
+recovery points automatically.

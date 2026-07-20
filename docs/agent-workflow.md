@@ -134,6 +134,14 @@ girelay setup codex
 Then start a task from a clean source checkout:
 
 ```bash
+girelay start auth-fix -- codex
+```
+
+That short form stores `auth-fix` itself as the durable intent. When the task id
+does not carry enough context, make intent explicit without changing the
+lifecycle:
+
+```bash
 girelay start auth-fix \
   --intent "Fix token refresh races without changing public API" \
   -- codex
@@ -188,14 +196,20 @@ breaks.
 ## 8. Parallel Coding Is A Consequence
 
 ```bash
-girelay start auth-fix --intent "Fix auth timeout" -- codex
-girelay start docs-sync --intent "Update authentication docs" -- claude
-girelay start parser-tests --intent "Add malformed-input tests" -- codex
+girelay start auth-fix -- codex
+girelay start docs-sync -- claude
+girelay start parser-tests -- codex
 girelay status
 ```
 
 Each task has its own files and index. Sessions for different tasks may run in
 parallel. Sessions for the same task are serialized.
+
+The repository dashboard also compares complete changed-path sets across active
+tasks. If `auth-fix` and `docs-sync` both touch `src/auth.rs`, both rows identify
+the other task and path. This is an early coordination warning, not a claim that
+Git will conflict and not a reason for automatic refusal. The set includes
+committed, staged, unstaged, renamed, deleted, and untracked paths.
 
 This is not security isolation. Agents still share operating-system resources,
 ports, caches, credentials, network access, remotes, and the repository's ref
@@ -255,6 +269,19 @@ git -C .girelay/workspaces/parser-fix diff
 git -C .girelay/workspaces/parser-fix log --oneline main..HEAD
 ```
 
+Ask girelay for a non-mutating integration plan:
+
+```bash
+girelay merge parser-fix --strategy squash --dry-run
+```
+
+The plan uses exact Git graph facts to report source advancement, task relation,
+active-task path overlap, commits, changed paths, dirty finalization, and any
+conflict confirmed for committed state. Every deterministic warning includes
+its evidence and a safe next action. Configured checks remain `pending` because
+preview does not execute them. No lock, ref, commit, file, index, or metadata is
+changed.
+
 Then merge from source:
 
 ```bash
@@ -266,6 +293,10 @@ girelay merge parser-fix \
 If agents made no commits, girelay runs configured checks and creates one final
 task commit. It then creates task and source rollback refs, revalidates source,
 and produces one source commit.
+
+When `--message` is omitted, girelay uses an explicitly supplied durable intent.
+If the intent defaulted from the task id, the stable message is `agent: complete
+<task>`. It never promotes agent-reported prose into verified commit input.
 
 If the task already has meaningful commits:
 
@@ -310,6 +341,18 @@ girelay recover restore <recovery-id> --confirm
 Snapshot recovery creates a new branch and worktree. Source rollback works only
 for the exact current merge result. Archive recovery verifies both checksum and
 Git bundle before recreating a task.
+
+If an interrupted process leaves a task lock, inspect rather than bypass it:
+
+```bash
+girelay recover unlock parser-fix
+girelay recover unlock parser-fix --confirm
+```
+
+Confirmation is refused while the recorded girelay parent or agent child is
+alive. For an interrupted session, recovery snapshots current state and closes
+the session record before removing the stale lock. Start the next relay only
+after that operation succeeds.
 
 ## 13. What Girelay Deliberately Leaves To Git
 
