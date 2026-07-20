@@ -14,6 +14,23 @@ pub enum TaskLifecycle {
     Cleaned,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum IntentSource {
+    Explicit,
+    TaskId,
+}
+
+fn default_intent_source() -> IntentSource {
+    IntentSource::Explicit
+}
+
+#[derive(Debug, Clone)]
+pub struct TaskIntent {
+    pub value: String,
+    pub source: IntentSource,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MergeRecord {
@@ -33,6 +50,8 @@ pub struct Task {
     pub schema_version: u32,
     pub id: String,
     pub intent: String,
+    #[serde(default = "default_intent_source")]
+    pub intent_source: IntentSource,
     pub source_repo: PathBuf,
     pub workspace_path: PathBuf,
     pub base_branch: String,
@@ -49,7 +68,7 @@ pub struct Task {
 impl Task {
     pub fn new(
         id: String,
-        intent: String,
+        intent: TaskIntent,
         source_repo: PathBuf,
         workspace_path: PathBuf,
         base_branch: String,
@@ -60,7 +79,8 @@ impl Task {
         Self {
             schema_version: SCHEMA_VERSION,
             id,
-            intent,
+            intent: intent.value,
+            intent_source: intent.source,
             source_repo,
             workspace_path,
             base_branch,

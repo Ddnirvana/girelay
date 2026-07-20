@@ -6,7 +6,13 @@ use std::path::Path;
 
 pub fn start(args: StartArgs) -> Result<()> {
     task::validate_task_id(&args.task_id)?;
-    task::validate_intent(&args.intent)?;
+    let (intent, intent_source) = match args.intent {
+        Some(intent) => {
+            task::validate_intent(&intent)?;
+            (intent, task::IntentSource::Explicit)
+        }
+        None => (args.task_id.clone(), task::IntentSource::TaskId),
+    };
     let source = git::source_repo(Path::new("."))
         .context("girelay start must run inside the source Git repository")?;
     if git::repo_root(Path::new("."))? != source {
@@ -50,7 +56,10 @@ pub fn start(args: StartArgs) -> Result<()> {
     git::add_worktree(&source, &workspace, &branch, &base)?;
     let record = task::Task::new(
         args.task_id.clone(),
-        args.intent,
+        task::TaskIntent {
+            value: intent,
+            source: intent_source,
+        },
         source.clone(),
         workspace.clone(),
         base,

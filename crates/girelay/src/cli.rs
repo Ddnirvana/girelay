@@ -51,8 +51,10 @@ pub struct SetupArgs {
 #[command(trailing_var_arg = true)]
 pub struct StartArgs {
     pub task_id: String,
+    /// Durable task intent; defaults verbatim to TASK_ID.
     #[arg(long)]
-    pub intent: String,
+    pub intent: Option<String>,
+    /// Source branch; defaults to the configured workspace base.
     #[arg(long)]
     pub base: Option<String>,
     /// Agent command to run after creating the worktree.

@@ -55,6 +55,38 @@ fn status_json_has_schema_v2_and_factual_state() {
 }
 
 #[test]
+fn intent_is_optional_and_task_id_is_the_deterministic_default() {
+    let repo = Repo::new();
+    run_ok(&repo.root, &["start", "auth-fix"]);
+    let task: Value = serde_json::from_str(
+        &std::fs::read_to_string(repo.root.join(".girelay/tasks/auth-fix.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(task["intent"], "auth-fix");
+    assert_eq!(task["intent_source"], "task-id");
+
+    run_ok(
+        &repo.root,
+        &[
+            "start",
+            "docs-fix",
+            "--intent",
+            "Improve agent docs",
+            "--",
+            "git",
+            "status",
+            "--short",
+        ],
+    );
+    let explicit: Value = serde_json::from_str(
+        &std::fs::read_to_string(repo.root.join(".girelay/tasks/docs-fix.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(explicit["intent"], "Improve agent docs");
+    assert_eq!(explicit["intent_source"], "explicit");
+}
+
+#[test]
 fn invalid_and_duplicate_task_ids_are_rejected() {
     let repo = Repo::new();
     let error = run_fail(&repo.root, &["start", "../bad", "--intent", "bad"]);
