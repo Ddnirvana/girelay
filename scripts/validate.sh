@@ -4,6 +4,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+echo "== toolchain =="
+rustc --version
+cargo --version
+cargo clippy --version
 echo "== cargo fmt --check =="
 cargo fmt --check
 echo "== cargo clippy --all-targets -- -D warnings =="

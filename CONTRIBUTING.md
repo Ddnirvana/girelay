@@ -7,6 +7,15 @@ cargo build
 bash scripts/validate.sh
 ```
 
+The crate supports Rust 1.85 and newer. CI checks the minimum version
+separately and runs the full validation gate on the latest stable toolchain.
+Before release-facing changes, update stable and reproduce that gate locally:
+
+```bash
+rustup update stable
+rustup run stable bash scripts/validate.sh
+```
+
 The Rust CLI lives in `crates/girelay`. Integration tests use disposable Git
 repositories and must never mutate the real checkout beyond normal build output.
 

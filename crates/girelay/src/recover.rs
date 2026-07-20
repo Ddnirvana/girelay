@@ -325,14 +325,13 @@ fn classify_ref(reference: &str, object: &str) -> Option<RecoveryPoint> {
                 rest.split('/').next()?,
                 "restores into a new recovery branch and worktree",
             )
-        } else if let Some(rest) = reference.strip_prefix("refs/girelay/rollback/source/") {
+        } else {
+            let rest = reference.strip_prefix("refs/girelay/rollback/source/")?;
             (
                 "source-pre-merge",
                 rest.split('/').next()?,
                 "restores only when the source still matches the recorded merge result",
             )
-        } else {
-            return None;
         };
     Some(RecoveryPoint {
         recovery_id: reference.into(),
@@ -403,14 +402,12 @@ fn assess(source: &Path, point: &mut RecoveryPoint) {
                     "stale or blocked: source no longer matches the recorded merge result".into();
             }
         }
-        "cleanup-archive" => {
-            if point.restorable {
-                point.restorable = task::load(source, &point.task_id)
-                    .map(|record| !record.workspace_path.exists())
-                    .unwrap_or(true);
-                if !point.restorable {
-                    point.note = "task workspace already exists".into();
-                }
+        "cleanup-archive" if point.restorable => {
+            point.restorable = task::load(source, &point.task_id)
+                .map(|record| !record.workspace_path.exists())
+                .unwrap_or(true);
+            if !point.restorable {
+                point.note = "task workspace already exists".into();
             }
         }
         _ => {}
