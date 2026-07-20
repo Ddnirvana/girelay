@@ -10,5 +10,8 @@ assets/demo/*.gif
 assets/demo/*.mp4
 !assets/demo/girelay-run-demo.gif
 !assets/demo/girelay-run-demo.mp4
+!assets/demo/multi-agent-relay.gif
+!assets/demo/multi-agent-relay.mp4
 assets/demo/*-transcript.txt
 !assets/demo/girelay-run-demo-transcript.txt
+!assets/demo/multi-agent-relay-transcript.txt

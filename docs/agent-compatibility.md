@@ -17,7 +17,8 @@ Compatibility claims use explicit evidence levels.
 | --- | --- |
 | Generic shell command | `verified-live` through start, relay, merge, and clean. |
 | Codex CLI 0.144.3 | `authenticated-live`; see [reviewed v2 evidence](evidence/codex-v2-live-2026-07-15.md). |
-| Claude Code | Skill artifact validated; CLI presence reported separately. |
+| Claude Code 2.1.215 | `authenticated-live` as the second runtime in the [reviewed Codex-to-Claude relay](evidence/multi-agent-relay-2026-07-20.md). |
+| Pi 0.80.2 | `authenticated-live` with GPT-5.6 Luna; see [reviewed v2 evidence](evidence/pi-v2-live-2026-07-20.md). |
 
 Run:
 

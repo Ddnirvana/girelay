@@ -1,0 +1,72 @@
+# girelay authenticated multi-agent relay
+
+Agents: Codex codex-cli 0.144.3 -> Claude Code 2.1.215
+Second-agent model: gpt-5.6-luna
+Fixture: examples/defining-relay-demo
+
+$ girelay start task-id-safety -- codex
+Codex completed normalization, ran focused tests, and reported reserved Git names as remaining.
+$ girelay relay task-id-safety -- claude
+Claude Code read the previous report, verified stage one, completed reserved-name rejection, and ran the full suite.
+
+$ girelay status task-id-safety
+Task: task-id-safety
+Intent: Normalize task ids and reject reserved Git names (explicit)
+State: paused
+Lifecycle: active
+Activity: idle
+Source branch: main
+Task branch: agent/task-id-safety
+Workspace: <demo>/repo/.girelay/workspaces/task-id-safety
+Workspace present: yes
+Dirty: yes
+Changed files: 1
+  task_id.py
+Active session: none
+Latest agent: claude
+Latest result: completed
+Semantic report: reported-by-agent
+Agent-reported summary: Completed task-id normalization safety by rejecting reserved Git names after normalization.
+Source state: unchanged
+Task relation to source: unchanged
+Recovery points: 4
+Warning [dirty-task-state]: task worktree contains uncommitted changes
+  Evidence: task_id.py
+  Next: review the task diff before relay, merge, or cleanup
+Next: girelay merge task-id-safety --dry-run
+
+$ girelay merge task-id-safety --dry-run
+Merge preview for task-id-safety
+Target: main
+Strategy: squash
+Message: fix: normalize safe task ids (argument)
+Task commits: 0
+Changed files: 1
+Dirty task state: yes
+Source state: unchanged
+Checks:
+  none configured
+Warning [dirty-task-state]: uncommitted task work will become a final task commit
+  Next: review the task worktree diff before merging
+Planned task rollback: refs/girelay/rollback/task/task-id-safety/<merge-id>
+Planned source rollback: refs/girelay/rollback/source/task-id-safety/<merge-id>
+No files, refs, commits, locks, or metadata were changed.
+
+$ girelay merge task-id-safety --message "fix: normalize safe task ids"
+Merged task task-id-safety with squash strategy
+Source commit: <merged-task-commit>
+Rollback: refs/girelay/rollback/source/task-id-safety/<merge-id>
+$ girelay recover list task-id-safety
+Recovery points: 7, including both session snapshots and merge rollback refs.
+$ girelay clean task-id-safety
+Cleaned task task-id-safety
+Branch: retained
+$ girelay recover restore refs/girelay/rollback/source/task-id-safety/<merge-id> --confirm
+Restored source branch main to <baseline-commit>
+
+$ git status --short --branch
+## main
+$ git rev-parse HEAD
+<baseline restored>
+$ git show-ref --verify refs/heads/agent/task-id-safety
+<task branch retained>

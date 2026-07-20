@@ -1,0 +1,8 @@
+test_lowercases_and_collapses_separators (test_normalization.NormalizationTests) ... ok
+test_rejects_empty_result (test_normalization.NormalizationTests) ... ok
+test_rejects_reserved_git_names (test_reserved.ReservedTaskIdTests) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK

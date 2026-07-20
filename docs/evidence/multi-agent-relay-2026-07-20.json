@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "date": "2026-07-20",
+  "status": "authenticated-live",
+  "scenario": "Codex starts a two-stage task and Claude Code verifies and completes it",
+  "agents": [
+    {
+      "agent": "codex",
+      "version": "0.144.3",
+      "role": "stage-one implementation and semantic handoff"
+    },
+    {
+      "agent": "claude",
+      "version": "2.1.215",
+      "model": "gpt-5.6-luna",
+      "role": "previous-report verification and task completion"
+    }
+  ],
+  "assertions": {
+    "native_shared_task_worktree": true,
+    "codex_report_submitted": true,
+    "codex_remaining_work_explicit": true,
+    "claude_received_previous_report": true,
+    "claude_verified_previous_report": true,
+    "claude_report_submitted": true,
+    "only_expected_file_changed": true,
+    "full_tests_passed": true,
+    "merge_preview_non_mutating": true,
+    "squash_merge_completed": true,
+    "task_rollback_ref_verified": true,
+    "source_rollback_ref_verified": true,
+    "cleanup_retained_branch": true,
+    "source_rollback_restored_baseline": true,
+    "credential_absent_from_published_artifacts": true
+  },
+  "changed_files": ["task_id.py"],
+  "test_count": 3,
+  "semantic_trust": "reported-by-agent",
+  "observed_trust": "verified-by-harness"
+}

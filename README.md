@@ -29,6 +29,16 @@ The animation is generated from a real deterministic CLI session. See the
 [transcript](assets/demo/girelay-run-demo-transcript.txt) and
 [MP4](assets/demo/girelay-run-demo.mp4).
 
+The defining authenticated relay uses Codex for a partial implementation and
+Claude Code to verify the handoff and finish the task, followed by preview,
+merge, cleanup, and actual rollback recovery:
+
+![Authenticated Codex-to-Claude relay through one durable girelay task](assets/demo/multi-agent-relay.gif)
+
+See its [reviewed evidence](docs/evidence/multi-agent-relay-2026-07-20.md),
+[transcript](assets/demo/multi-agent-relay-transcript.txt), and
+[MP4](assets/demo/multi-agent-relay.mp4).
+
 ## Why It Exists
 
 `git worktree` solves checkout isolation. It does not define a task, prevent two
@@ -125,7 +135,7 @@ for the complete model and examples.
 
 | Command | Purpose |
 | --- | --- |
-| `setup <codex|claude>` | Install the semantic relay skill at user scope. |
+| `setup <codex|claude|pi>` | Install the semantic relay skill at user scope. |
 | `start <task> [--intent ...] -- <agent>` | Create a worktree and optionally run the first agent. |
 | `relay <task> -- <agent>` | Continue the same task in another recorded session. |
 | `status [task] [--json]` | Show the repository dashboard or one detailed task view. |
@@ -143,11 +153,13 @@ integration, and maintainer references.
 | Agent | Current evidence |
 | --- | --- |
 | Codex CLI | Authenticated v2 lifecycle: isolated repair, semantic report, external test verification, squash merge, rollback refs, and cleanup. |
-| Claude Code | User-level skill and deterministic protocol artifacts validated; live CLI not available in the current evidence environment. |
+| Claude Code 2.1.215 | Authenticated second-agent relay: previous-report verification, focused completion, semantic report, merge, cleanup, and rollback recovery. |
+| Pi 0.80.2 | Authenticated v2 lifecycle with GPT-5.6 Luna: isolated repair, semantic report, external test verification, squash merge, rollback refs, and cleanup. |
 | Generic shell agents | Deterministic start, relay, merge, and clean lifecycle in every validation run. |
 
-See the [reviewed Codex evidence](docs/evidence/codex-v2-live-2026-07-15.md)
-and [evidence-level definitions](docs/agent-compatibility.md).
+See the reviewed [Codex evidence](docs/evidence/codex-v2-live-2026-07-15.md),
+[Pi evidence](docs/evidence/pi-v2-live-2026-07-20.md), and
+[evidence-level definitions](docs/agent-compatibility.md).
 
 ## Parallel Coding
 

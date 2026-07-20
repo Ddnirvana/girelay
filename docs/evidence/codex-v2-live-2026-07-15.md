@@ -38,7 +38,9 @@ agent claim is not silently persisted.
 
 ## Boundaries
 
-- Claude Code was not installed in this environment and is not claimed as live.
+- Claude Code was not installed for this July 15 Codex-only run. A later,
+  separate [Codex-to-Claude relay](multi-agent-relay-2026-07-20.md) provides
+  reviewed Claude Code runtime evidence.
 - The fixture was intentionally small and does not prove model quality on large
   repositories.
 - Semantic fields remain `reported-by-agent`; the harness independently checked
