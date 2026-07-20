@@ -27,33 +27,7 @@ bash -n \
   scripts/render-multi-agent-demo.sh
 PYTHONPYCACHEPREFIX="$ROOT/target/python-cache" python3 -m py_compile scripts/run-with-timeout.py
 node --check scripts/render-media.cjs
-for artifact in \
-  assets/demo/multi-agent-relay-transcript.txt \
-  assets/demo/multi-agent-relay-tests.txt \
-  assets/demo/multi-agent-relay.gif \
-  assets/demo/multi-agent-relay.mp4 \
-  docs/evidence/pi-v2-live-2026-07-20.json \
-  docs/evidence/multi-agent-relay-2026-07-20.json; do
-  test -s "$artifact"
-done
-rg -q 'Codex codex-cli 0\.144\.3 -> Claude Code 2\.1\.215' \
-  assets/demo/multi-agent-relay-transcript.txt
-rg -q 'Restored source branch main to <baseline-commit>' \
-  assets/demo/multi-agent-relay-transcript.txt
-rg -q 'Ran 3 tests' assets/demo/multi-agent-relay-tests.txt
-node -e 'for (const file of process.argv.slice(1)) JSON.parse(require("fs").readFileSync(file, "utf8"))' \
-  docs/evidence/pi-v2-live-2026-07-20.json \
-  docs/evidence/multi-agent-relay-2026-07-20.json
-credential_pattern='s''k-[A-Za-z0-9_-]{12,}'
-user_path_pattern='/''Users/'
-if rg -n "$user_path_pattern|/private/var/|/tmp/|$credential_pattern" \
-  assets/demo/multi-agent-relay-transcript.txt \
-  assets/demo/multi-agent-relay-tests.txt \
-  docs/evidence/pi-v2-live-2026-07-20.* \
-  docs/evidence/multi-agent-relay-2026-07-20.*; then
-  echo "publishable agent evidence contains a private path or credential pattern" >&2
-  exit 1
-fi
+node scripts/check-agent-artifacts.cjs
 echo "== cargo build --workspace =="
 cargo build --workspace
 echo "== focused lifecycle demo =="

@@ -219,9 +219,26 @@ if [[ -n "$CLAUDE_API_KEY" ]] && grep -R -F -- "$CLAUDE_API_KEY" "$OUT" >/dev/nu
   echo "credential leaked into demo artifacts" >&2
   exit 4
 fi
-credential_pattern='s''k-[A-Za-z0-9_-]{12,}'
-user_path_pattern='/''Users/'
-if rg -n "$user_path_pattern|/private/var/|/tmp/|$credential_pattern" "$TRANSCRIPT" "$OUT"/*.json; then
+if ! python3 - "$TRANSCRIPT" "$OUT"/*.json <<'PY'
+import pathlib
+import re
+import sys
+
+pattern = re.compile("|".join([
+    "/" + "Users/",
+    "/private/" + "var/",
+    "/" + "tmp/",
+    "s" + r"k-[A-Za-z0-9_-]{12,}",
+]))
+found = False
+for name in sys.argv[1:]:
+    path = pathlib.Path(name)
+    for number, line in enumerate(path.read_text().splitlines(), start=1):
+        if pattern.search(line):
+            print(f"{path}:{number}:{line}")
+            found = True
+raise SystemExit(1 if found else 0)
+PY
   echo "private path or credential pattern remains in publishable demo artifacts" >&2
   exit 4
 fi
