@@ -183,6 +183,11 @@ impl Drop for StaleLockClaim {
 
 #[cfg(unix)]
 pub fn process_alive(pid: u32) -> bool {
+    // Unix process IDs are positive pid_t values. Values outside that range can
+    // wrap to special negative kill(2) selectors on some platforms.
+    if pid == 0 || pid > i32::MAX as u32 {
+        return false;
+    }
     let pid = pid.to_string();
     Command::new("kill")
         .args(["-0", &pid])
@@ -190,6 +195,17 @@ pub fn process_alive(pid: u32) -> bool {
         .stderr(Stdio::null())
         .status()
         .is_ok_and(|status| status.success())
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::process_alive;
+
+    #[test]
+    fn invalid_unsigned_pid_is_not_treated_as_a_live_process() {
+        assert!(!process_alive(0));
+        assert!(!process_alive(u32::MAX));
+    }
 }
 
 #[cfg(windows)]
