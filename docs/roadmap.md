@@ -10,7 +10,8 @@ girelay stays focused on local agent worktree lifecycle and semantic relay.
 - factual status and stable schema-v2 JSON;
 - squash/preserve source merge with checks and rollback refs;
 - dirty-state-aware cleanup, guarded branch deletion, archives, and recovery;
-- Codex and Claude skill installation without tracked-file modification.
+- Codex, Claude, and Pi skill installation without tracked-file modification;
+- a stable generic environment and report protocol for additional adapters.
 
 ## P0: Release Evidence
 

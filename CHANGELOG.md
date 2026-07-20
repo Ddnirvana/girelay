@@ -21,8 +21,9 @@ All notable changes to girelay are documented here.
   approximate-storage reporting while retaining exact refs in detailed output.
 - Added hidden start/end snapshots that preserve uncommitted state without
   adding checkpoint commits to task branches.
-- Added Codex and Claude user-level relay skills and immutable, session-bound
-  semantic reports with explicit trust labels.
+- Added strengthened Codex, Claude, and Pi user-level relay skills plus a stable
+  generic adapter environment and immutable, session-bound semantic reports
+  with explicit trust labels.
 - Added squash and history-preserving source merge, configured checks, task and
   source rollback refs, source revalidation, and conflict rollback.
 - Added dirty-state-aware cleanup, retained branches by default, merge-aware
@@ -30,7 +31,8 @@ All notable changes to girelay are documented here.
 - Added deterministic lifecycle, parallel, report, conflict, archive, and stale
   rollback tests plus release/package validation.
 - Added focused user documentation, examples, compatibility evidence levels,
-  release packaging, and demo tooling.
+  release packaging, deterministic demo tooling, and an authenticated
+  Codex-to-Claude relay demo with reviewed rollback evidence.
 
 The pre-release prototype command and integration experiments were removed
 before the first public release to keep the product scope coherent.
