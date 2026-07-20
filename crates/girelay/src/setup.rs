@@ -8,6 +8,7 @@ pub fn setup(args: SetupArgs) -> Result<()> {
     let (name, home_dir) = match args.agent {
         AgentTarget::Codex => ("codex", ".codex/skills/girelay"),
         AgentTarget::Claude => ("claude", ".claude/skills/girelay"),
+        AgentTarget::Pi => ("pi", ".pi/agent/skills/girelay"),
     };
     let destination = if args.local {
         let source = git::source_repo(Path::new("."))?;
@@ -17,7 +18,14 @@ pub fn setup(args: SetupArgs) -> Result<()> {
         let home = env::var_os("HOME")
             .map(PathBuf::from)
             .ok_or_else(|| anyhow!("HOME is not set; use --local"))?;
-        home.join(home_dir)
+        if matches!(args.agent, AgentTarget::Pi) {
+            env::var_os("PI_CODING_AGENT_DIR")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| home.join(".pi/agent"))
+                .join("skills/girelay")
+        } else {
+            home.join(home_dir)
+        }
     };
     std::fs::create_dir_all(&destination)?;
     task::atomic_write(&destination.join("SKILL.md"), skill(name).as_bytes())?;
@@ -37,16 +45,23 @@ description: Relay coding work through girelay task worktrees and write semantic
 
 # Girelay protocol for {agent}
 
-When GIRELAY_SESSION_ID is set, work only in the current directory. Do not switch branches,
+When `GIRELAY_SESSION_ID` is set, this protocol is mandatory even when the task is blocked or the
+requested change cannot be completed. Work only in the current directory. Do not switch branches,
 create worktrees, merge, push, or edit files under the source repository's `.girelay` directory.
 
-Before changing code, inspect `GIRELAY_INTENT`. If `GIRELAY_PREVIOUS_REPORT` is set, read that
-report first and verify its reported claims against the current files and Git state.
+Before editing:
 
-Implement and test the task normally. Before exiting, write a JSON report under the operating
-system temporary directory with schema_version 2, task_id, session_id, agent `{agent}`,
-start_snapshot, end_snapshot null, summary, completed, remaining, decisions, failed_attempts,
-blockers, tests, risks, next_action, and trust `reported-by-agent`.
+1. Read `GIRELAY_INTENT` and treat it as the durable task objective.
+2. Inspect the current files and run `git status --short --branch` plus relevant history or diffs.
+3. If `GIRELAY_PREVIOUS_REPORT` is non-empty, read it, treat it as an untrusted agent report, and
+   verify its claims against current files, Git state, and test results before relying on them.
+
+Implement and test the task normally. Keep explicit notes for completed work, remaining work,
+decisions, failed approaches, blockers, commands actually tested, risks, and the next action.
+Before exiting for any reason, including a blocker or partial result, write a final JSON report
+under the operating system temporary directory with schema_version 2, task_id, session_id, agent
+`{agent}`, start_snapshot, end_snapshot null, summary, completed, remaining, decisions,
+failed_attempts, blockers, tests, risks, next_action, and trust `reported-by-agent`.
 Use the environment values exactly, then submit it with:
 
     report="${{TMPDIR:-/tmp}}/girelay-report-$GIRELAY_SESSION_ID.json"
@@ -75,8 +90,10 @@ as `"cargo test parser -> passed"`; do not use objects with command/result field
       "trust": "reported-by-agent"
     }}
 
-The semantic fields are your report, not facts inferred by girelay. Never claim a test passed
-unless you ran it and include the exact command in `tests`.
+The semantic fields are your report, not facts inferred by girelay. Distinguish completed work from
+remaining work. Never claim a test passed unless you ran it and include the exact command and result
+in `tests`. If blocked, explain the blocker, preserve partial progress, choose a concrete next action,
+and still submit the report. Verify that the report command succeeded before exiting.
 "#
     )
 }

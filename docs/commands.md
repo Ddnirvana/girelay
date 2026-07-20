@@ -5,13 +5,16 @@
 ```bash
 girelay setup codex
 girelay setup claude
+girelay setup pi
 girelay setup codex --local
 ```
 
 The default installs the `girelay` protocol skill in the agent's user-level
 skill directory. `--local` writes it under the current repository's excluded
 `.girelay/skills/` directory for inspection or manual integration; it does not
-modify tracked `AGENTS.md` or `CLAUDE.md` files.
+modify tracked `AGENTS.md` or `CLAUDE.md` files. Supported user-level targets
+are Codex (`~/.codex/skills`), Claude Code (`~/.claude/skills`), and Pi
+(`~/.pi/agent/skills`).
 
 ## `girelay start`
 
@@ -48,9 +51,12 @@ GIRELAY_SESSION_ID
 GIRELAY_INTENT
 GIRELAY_SOURCE_REPO
 GIRELAY_START_SNAPSHOT
-GIRELAY_PREVIOUS_REPORT   # only when one exists
+GIRELAY_PREVIOUS_REPORT   # empty when no prior report exists
 GIRELAY_REPORT_COMMAND
 ```
+
+See the [generic adapter contract](adapter-contract.md) for exact meanings and
+report submission rules.
 
 Before launch, girelay prints the task, durable intent, workspace, previous
 agent/result, semantic report availability and trust, changed-file count, and

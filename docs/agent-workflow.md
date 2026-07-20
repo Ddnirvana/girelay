@@ -92,8 +92,8 @@ girelay:
 
 ### Layer B: Semantic Relay Protocol
 
-This requires agent cooperation through `girelay setup codex` or
-`girelay setup claude`:
+This requires agent cooperation through `girelay setup codex`,
+`girelay setup claude`, or `girelay setup pi`:
 
 - read the durable task intent;
 - inspect the previous report when present;
@@ -228,7 +228,8 @@ Claude receives:
 - the same worktree and branch;
 - the original `GIRELAY_INTENT`;
 - a new session id and start snapshot;
-- `GIRELAY_PREVIOUS_REPORT` when Codex submitted one.
+- `GIRELAY_PREVIOUS_REPORT`, containing Codex's report path when one was
+  submitted and an empty string otherwise.
 
 The report looks like:
 

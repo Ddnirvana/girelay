@@ -103,29 +103,44 @@ fn local_setup_writes_only_excluded_skill_artifacts() {
     let repo = Repo::new();
     run_ok(&repo.root, &["setup", "codex", "--local"]);
     run_ok(&repo.root, &["setup", "claude", "--local"]);
+    run_ok(&repo.root, &["setup", "pi", "--local"]);
     let codex = repo.root.join(".girelay/skills/codex/SKILL.md");
     let claude = repo.root.join(".girelay/skills/claude/SKILL.md");
+    let pi = repo.root.join(".girelay/skills/pi/SKILL.md");
     assert!(codex.exists());
     assert!(claude.exists());
-    assert!(
-        std::fs::read_to_string(codex)
-            .unwrap()
-            .contains("reported-by-agent")
-    );
-    assert!(
-        std::fs::read_to_string(claude)
-            .unwrap()
-            .contains("Every list field is an array of JSON strings")
-    );
+    assert!(pi.exists());
+    for (agent, path) in [("codex", codex), ("claude", claude), ("pi", pi)] {
+        let skill = std::fs::read_to_string(path).unwrap();
+        for requirement in [
+            "Read `GIRELAY_INTENT`",
+            "git status --short --branch",
+            "verify its claims against current files",
+            "completed work from\nremaining work",
+            "failed approaches",
+            "commands actually tested",
+            "including a blocker or partial result",
+            "still submit the report",
+            "reported-by-agent",
+        ] {
+            assert!(
+                skill.contains(requirement),
+                "{agent} skill is missing requirement: {requirement}"
+            );
+        }
+        assert!(skill.contains(&format!("# Girelay protocol for {agent}")));
+        assert!(skill.contains(&format!("\"agent\": \"{agent}\"")));
+    }
     assert_eq!(crate::common::git(&repo.root, &["status", "--short"]), "");
     assert!(!repo.root.join("CLAUDE.md").exists());
+    assert!(!repo.root.join("AGENTS.md").exists());
 }
 
 #[test]
 fn user_setup_targets_agent_specific_skill_directories() {
     let repo = Repo::new();
     let home = tempfile::TempDir::new().unwrap();
-    for agent in ["codex", "claude"] {
+    for agent in ["codex", "claude", "pi"] {
         let output = std::process::Command::new(crate::common::girelay())
             .args(["setup", agent])
             .env("HOME", home.path())
@@ -140,4 +155,30 @@ fn user_setup_targets_agent_specific_skill_directories() {
     }
     assert!(home.path().join(".codex/skills/girelay/SKILL.md").exists());
     assert!(home.path().join(".claude/skills/girelay/SKILL.md").exists());
+    assert!(
+        home.path()
+            .join(".pi/agent/skills/girelay/SKILL.md")
+            .exists()
+    );
+}
+
+#[test]
+fn pi_setup_respects_its_native_agent_directory_override() {
+    let repo = Repo::new();
+    let home = tempfile::TempDir::new().unwrap();
+    let pi_dir = home.path().join("managed-pi-profile");
+    let output = std::process::Command::new(crate::common::girelay())
+        .args(["setup", "pi"])
+        .env("HOME", home.path())
+        .env("PI_CODING_AGENT_DIR", &pi_dir)
+        .current_dir(&repo.root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(pi_dir.join("skills/girelay/SKILL.md").exists());
+    assert!(!home.path().join(".pi/agent/skills/girelay").exists());
 }

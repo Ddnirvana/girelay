@@ -33,10 +33,11 @@ pub enum Commands {
     Report(ReportArgs),
 }
 
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum AgentTarget {
     Codex,
     Claude,
+    Pi,
 }
 
 #[derive(Debug, Args)]
