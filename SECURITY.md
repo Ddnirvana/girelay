@@ -22,5 +22,11 @@ Safety-sensitive issues include:
 
 ## Supported Versions
 
-girelay is pre-1.0. Security fixes target the latest `main` branch until stable
-releases begin.
+girelay is pre-1.0. Security fixes target the latest `0.1.x` release and the
+latest `main` branch. Upgrade to the newest patch before reporting an issue
+that may already be fixed.
+
+| Version | Supported |
+| --- | --- |
+| 0.1.x | Yes |
+| Earlier prototypes | No |

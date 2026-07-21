@@ -11,15 +11,14 @@ girelay stays focused on local agent worktree lifecycle and semantic relay.
 - squash/preserve source merge with checks and rollback refs;
 - dirty-state-aware cleanup, guarded branch deletion, archives, and recovery;
 - Codex, Claude, and Pi skill installation without tracked-file modification;
-- a stable generic environment and report protocol for additional adapters.
+- a stable generic environment and report protocol for additional adapters;
+- active-task path overlap and exact source/task divergence reporting;
+- reviewed Codex-to-Claude relay evidence with reproducible demo media.
 
 ## P0: Release Evidence
 
 - publish checksummed binaries, Debian packages, a Homebrew formula, and the
   crate after all final registry checks;
-- record a short real-agent demo for start, relay, merge, and clean;
-- publish reviewed authenticated compatibility evidence for current Codex and
-  Claude Code releases;
 - add Windows runtime scenarios in addition to cross-platform compilation;
 - make every safety refusal name the unchanged state and safest next command.
 
@@ -33,9 +32,7 @@ girelay stays focused on local agent worktree lifecycle and semantic relay.
 
 ## P1: Better Parallel Work
 
-- warn when active tasks touch overlapping paths;
 - record optional task dependencies and suggested merge order;
-- explain source/task divergence before merge;
 - support safe adoption of an existing native worktree without weakening
   ownership checks.
 

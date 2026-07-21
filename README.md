@@ -60,13 +60,15 @@ girelay adds those session semantics:
 ## Install
 
 ```bash
-cargo install --path crates/girelay
+cargo install girelay
 girelay --version
 ```
 
-Registry publishing is intentionally disabled until the first coordinated
-release. See [installation](docs/installation.md) for release binaries,
-Homebrew, and Debian packaging.
+Tagged releases also provide checksummed binaries for Linux, macOS, and
+Windows, plus Debian packages for `amd64` and `arm64`. See
+[installation](docs/installation.md) for verified download and source-build
+instructions. Homebrew is advertised only after its real tap passes an install
+test against published release assets.
 
 ## First Task
 
