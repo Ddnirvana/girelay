@@ -1,6 +1,8 @@
 # girelay
 
 [![CI](https://github.com/Ddnirvana/girelay/actions/workflows/ci.yml/badge.svg)](https://github.com/Ddnirvana/girelay/actions/workflows/ci.yml)
+[![Crates.io](https://img.shields.io/crates/v/girelay.svg)](https://crates.io/crates/girelay)
+[![Crates.io Downloads](https://img.shields.io/crates/d/girelay.svg)](https://crates.io/crates/girelay)
 [![Release](https://img.shields.io/github/v/release/Ddnirvana/girelay)](https://github.com/Ddnirvana/girelay/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/Ddnirvana/girelay/total)](https://github.com/Ddnirvana/girelay/releases)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -65,10 +67,10 @@ girelay adds those session semantics:
 brew install Ddnirvana/girelay/girelay
 ```
 
-Or install the tagged source through Cargo:
+Or install from crates.io:
 
 ```bash
-cargo install --git https://github.com/Ddnirvana/girelay --tag v0.1.1 girelay
+cargo install girelay
 girelay --version
 ```
 

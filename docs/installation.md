@@ -3,13 +3,10 @@
 Prerequisites: Git 2.31 or newer and a platform supported by the release
 artifacts. Building from source requires Rust 1.85 or newer.
 
-## From Cargo
-
-Until crates.io publication is announced, install the verified release tag
-directly from GitHub:
+## From crates.io
 
 ```bash
-cargo install --git https://github.com/Ddnirvana/girelay --tag v0.1.1 girelay
+cargo install girelay
 girelay --version
 ```
 
