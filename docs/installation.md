@@ -3,10 +3,13 @@
 Prerequisites: Git 2.31 or newer and a platform supported by the release
 artifacts. Building from source requires Rust 1.85 or newer.
 
-## From crates.io
+## From Cargo
+
+Until crates.io publication is announced, install the verified release tag
+directly from GitHub:
 
 ```bash
-cargo install girelay
+cargo install --git https://github.com/Ddnirvana/girelay --tag v0.1.1 girelay
 girelay --version
 ```
 
@@ -60,9 +63,15 @@ girelay --version
 
 ## From Homebrew
 
-The repository includes a formula template for release automation, but no tap
-is advertised until its install command has been tested against a tagged
-release.
+The public tap is tested against the tagged release assets before each formula
+is advertised:
+
+```bash
+brew install Ddnirvana/girelay/girelay
+girelay --version
+```
+
+Upgrade an existing installation with `brew update && brew upgrade girelay`.
 
 ## Development Build
 

@@ -2,6 +2,7 @@ class Girelay < Formula
   desc "Git worktrees built for coding-agent relay"
   homepage "https://github.com/Ddnirvana/girelay"
   version "__VERSION__"
+  license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
@@ -28,6 +29,6 @@ class Girelay < Formula
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/girelay --version")
+    assert_match "girelay #{version}", shell_output("#{bin}/girelay --version")
   end
 end

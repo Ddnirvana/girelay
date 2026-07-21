@@ -17,8 +17,7 @@ girelay stays focused on local agent worktree lifecycle and semantic relay.
 
 ## P0: Release Evidence
 
-- publish checksummed binaries, Debian packages, a Homebrew formula, and the
-  crate after all final registry checks;
+- publish the crate after all final registry checks;
 - add Windows runtime scenarios in addition to cross-platform compilation;
 - make every safety refusal name the unchanged state and safest next command.
 

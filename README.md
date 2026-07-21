@@ -1,6 +1,8 @@
 # girelay
 
 [![CI](https://github.com/Ddnirvana/girelay/actions/workflows/ci.yml/badge.svg)](https://github.com/Ddnirvana/girelay/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Ddnirvana/girelay)](https://github.com/Ddnirvana/girelay/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Ddnirvana/girelay/total)](https://github.com/Ddnirvana/girelay/releases)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Rust](https://img.shields.io/badge/rust-2024-orange.svg)
 
@@ -60,15 +62,21 @@ girelay adds those session semantics:
 ## Install
 
 ```bash
-cargo install girelay
+brew install Ddnirvana/girelay/girelay
+```
+
+Or install the tagged source through Cargo:
+
+```bash
+cargo install --git https://github.com/Ddnirvana/girelay --tag v0.1.1 girelay
 girelay --version
 ```
 
 Tagged releases also provide checksummed binaries for Linux, macOS, and
 Windows, plus Debian packages for `amd64` and `arm64`. See
 [installation](docs/installation.md) for verified download and source-build
-instructions. Homebrew is advertised only after its real tap passes an install
-test against published release assets.
+instructions. The Homebrew formula is tested against the same published
+release assets before it is advertised here.
 
 ## First Task
 
