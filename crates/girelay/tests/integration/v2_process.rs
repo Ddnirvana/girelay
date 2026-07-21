@@ -1,8 +1,11 @@
 use crate::common::{Repo, run, run_ok};
 use serde_json::Value;
 use std::fs;
+#[cfg(unix)]
 use std::process::{Command, Stdio};
+#[cfg(unix)]
 use std::thread;
+#[cfg(unix)]
 use std::time::Duration;
 
 #[test]
