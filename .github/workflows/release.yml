@@ -88,8 +88,13 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - name: Test release target
+        if: runner.os != 'Windows'
         shell: bash
         run: cargo test --release --target "${{ matrix.target }}"
+      - name: Compile release tests
+        if: runner.os == 'Windows'
+        shell: bash
+        run: cargo test --release --target "${{ matrix.target }}" --no-run
       - name: Build and execute release binary
         shell: bash
         run: |
