@@ -13,6 +13,7 @@ on:
       - "Cargo.lock"
       - "crates/girelay/Cargo.toml"
       - "packaging/**"
+      - "scripts/package-check.sh"
       - "scripts/package-deb.sh"
       - "scripts/package-release.sh"
       - "scripts/release-check.sh"
