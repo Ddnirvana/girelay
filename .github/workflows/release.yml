@@ -48,19 +48,22 @@ jobs:
     needs: release-check
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER: musl-gcc
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: linux-x86_64
             os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             deb_arch: amd64
             bin: girelay
             archive: girelay-linux-x86_64.tar.gz
           - name: linux-aarch64
             os: ubuntu-24.04-arm
-            target: aarch64-unknown-linux-gnu
+            target: aarch64-unknown-linux-musl
             deb_arch: arm64
             bin: girelay
             archive: girelay-linux-aarch64.tar.gz
@@ -84,6 +87,11 @@ jobs:
             deb_arch: ""
     steps:
       - uses: actions/checkout@v4
+      - name: Install musl toolchain
+        if: matrix.deb_arch != ''
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes musl-tools
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -100,6 +108,14 @@ jobs:
         run: |
           cargo build --release --target "${{ matrix.target }}"
           "target/${{ matrix.target }}/release/${{ matrix.bin }}" --version
+      - name: Verify static Linux binary
+        if: matrix.deb_arch != ''
+        shell: bash
+        run: |
+          if readelf --program-headers "target/${{ matrix.target }}/release/${{ matrix.bin }}" | grep -q INTERP; then
+            echo "Linux release binary unexpectedly requires a dynamic interpreter." >&2
+            exit 1
+          fi
       - name: Package artifact
         shell: bash
         run: |

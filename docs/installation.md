@@ -31,7 +31,9 @@ Artifact names:
 - `girelay-macos-aarch64.tar.gz`
 - `girelay-windows-x86_64.zip`
 
-On Linux:
+Linux release archives contain static musl binaries so they remain compatible
+with stable distributions whose GLIBC is older than the release runner. On
+Linux:
 
 ```bash
 sha256sum -c girelay-linux-x86_64.tar.gz.sha256
