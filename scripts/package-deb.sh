@@ -8,7 +8,9 @@ ARCH="${3:-amd64}"
 VERSION="$(sed -n 's/^version = "\([^"]*\)"/\1/p' "$ROOT/crates/girelay/Cargo.toml" | head -1)"
 MAINTAINER="${GIRELAY_DEB_MAINTAINER:-}"
 STAGE="$ROOT/target/debian-package/girelay_${VERSION}_${ARCH}"
-OUTPUT="$ROOT/dist/girelay_${VERSION}_${ARCH}.deb"
+OUTPUT_DIR="$ROOT/dist"
+OUTPUT_NAME="girelay_${VERSION}_${ARCH}.deb"
+OUTPUT="$OUTPUT_DIR/$OUTPUT_NAME"
 
 case "$ARCH" in
   amd64|arm64) ;;
@@ -44,14 +46,20 @@ command -v dpkg-deb >/dev/null 2>&1 || {
 
 cp "$ROOT/target/$TARGET/release/girelay" "$STAGE/usr/bin/girelay"
 chmod 0755 "$STAGE/usr/bin/girelay"
-mkdir -p "$ROOT/dist"
+mkdir -p "$OUTPUT_DIR"
 dpkg-deb --root-owner-group --build "$STAGE" "$OUTPUT"
 
-if command -v sha256sum >/dev/null 2>&1; then
-  sha256sum "$OUTPUT" > "$OUTPUT.sha256"
-else
-  shasum -a 256 "$OUTPUT" > "$OUTPUT.sha256"
-fi
+(
+  cd "$OUTPUT_DIR"
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$OUTPUT_NAME" > "$OUTPUT_NAME.sha256"
+    sha256sum -c "$OUTPUT_NAME.sha256"
+  else
+    shasum -a 256 "$OUTPUT_NAME" > "$OUTPUT_NAME.sha256"
+    shasum -a 256 -c "$OUTPUT_NAME.sha256"
+  fi
+  test "$(awk 'NR == 1 { print $2 }' "$OUTPUT_NAME.sha256")" = "$OUTPUT_NAME"
+)
 
 echo "Wrote $OUTPUT"
 echo "Wrote $OUTPUT.sha256"
