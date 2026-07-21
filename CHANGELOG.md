@@ -2,6 +2,16 @@
 
 All notable changes to girelay are documented here.
 
+## 0.1.1 - 2026-07-21
+
+- Rebuilt Linux archives and Debian packages as static musl binaries so they
+  run on stable distributions without inheriting the release runner's GLIBC
+  version.
+- Fixed Debian checksum files to contain portable artifact filenames instead
+  of absolute GitHub runner paths.
+- Added release gates for static Linux executables and self-verifying Debian
+  checksum files.
+
 ## 0.1.0 - 2026-07-21
 
 - Added native Git worktrees under excluded `.girelay/workspaces` metadata.

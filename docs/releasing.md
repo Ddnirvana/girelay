@@ -52,8 +52,8 @@ Inspect the local archive and checksum, confirm CI passes on `main`, then create
 an annotated tag matching the Cargo version:
 
 ```bash
-git tag -a v0.1.0 -m "girelay 0.1.0"
-git push origin v0.1.0
+git tag -a v0.1.1 -m "girelay 0.1.1"
+git push origin v0.1.1
 ```
 
 After the workflow completes, download each artifact, verify its checksum, and
