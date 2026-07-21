@@ -3,21 +3,45 @@ name: Release
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     tags:
       - "v*"
+    paths:
+      - ".github/workflows/release.yml"
+      - "CHANGELOG.md"
+      - "Cargo.lock"
+      - "crates/girelay/Cargo.toml"
+      - "packaging/**"
+      - "scripts/package-deb.sh"
+      - "scripts/package-release.sh"
+      - "scripts/release-check.sh"
+      - "scripts/version-check.sh"
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
       - run: bash scripts/release-check.sh
+        env:
+          GIRELAY_RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
 
   build-artifacts:
     needs: release-check
@@ -40,13 +64,13 @@ jobs:
             bin: girelay
             archive: girelay-linux-aarch64.tar.gz
           - name: macos-x86_64
-            os: macos-13
+            os: macos-15-intel
             target: x86_64-apple-darwin
             bin: girelay
             archive: girelay-macos-x86_64.tar.gz
             deb_arch: ""
           - name: macos-aarch64
-            os: macos-14
+            os: macos-15
             target: aarch64-apple-darwin
             bin: girelay
             archive: girelay-macos-aarch64.tar.gz
@@ -62,30 +86,59 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      - run: cargo build --release --target ${{ matrix.target }}
+      - name: Test release target
+        shell: bash
+        run: cargo test --release --target "${{ matrix.target }}"
+      - name: Build and execute release binary
+        shell: bash
+        run: |
+          cargo build --release --target "${{ matrix.target }}"
+          "target/${{ matrix.target }}/release/${{ matrix.bin }}" --version
       - name: Package artifact
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
           cp "target/${{ matrix.target }}/release/${{ matrix.bin }}" "dist/${{ matrix.bin }}"
+          cp README.md LICENSE dist/
           cd dist
           if [[ "${{ matrix.archive }}" == *.zip ]]; then
-            7z a "${{ matrix.archive }}" "${{ matrix.bin }}"
+            7z a "${{ matrix.archive }}" "${{ matrix.bin }}" README.md LICENSE
           else
-            tar -czf "${{ matrix.archive }}" "${{ matrix.bin }}"
+            tar -czf "${{ matrix.archive }}" "${{ matrix.bin }}" README.md LICENSE
           fi
           if command -v sha256sum >/dev/null 2>&1; then
             sha256sum "${{ matrix.archive }}" > "${{ matrix.archive }}.sha256"
+            sha256sum -c "${{ matrix.archive }}.sha256"
           else
             shasum -a 256 "${{ matrix.archive }}" > "${{ matrix.archive }}.sha256"
+            shasum -a 256 -c "${{ matrix.archive }}.sha256"
           fi
+      - name: Verify packaged archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist/verify
+          if [[ "${{ matrix.archive }}" == *.zip ]]; then
+            7z x "dist/${{ matrix.archive }}" "-odist/verify"
+          else
+            tar -xzf "dist/${{ matrix.archive }}" -C dist/verify
+          fi
+          test -s dist/verify/README.md
+          test -s dist/verify/LICENSE
+          "dist/verify/${{ matrix.bin }}" --version
       - name: Package Debian artifact
         if: matrix.deb_arch != ''
         shell: bash
         env:
           GIRELAY_DEB_MAINTAINER: ${{ github.repository_owner }} <${{ github.repository_owner }}@users.noreply.github.com>
         run: bash scripts/package-deb.sh build "${{ matrix.target }}" "${{ matrix.deb_arch }}"
+      - name: Install Debian artifact
+        if: matrix.deb_arch != ''
+        shell: bash
+        run: |
+          sudo dpkg -i dist/*.deb
+          /usr/bin/girelay --version
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
@@ -106,5 +159,9 @@ jobs:
           merge-multiple: true
       - uses: softprops/action-gh-release@v2
         with:
+          name: girelay ${{ github.ref_name }}
+          generate_release_notes: true
+          make_latest: true
+          fail_on_unmatched_files: true
           files: |
             dist/*

@@ -11,7 +11,6 @@ homepage = "https://github.com/Ddnirvana/girelay"
 documentation = "https://github.com/Ddnirvana/girelay/tree/main/docs"
 keywords = ["git", "agents", "cli", "workflow", "developer-tools"]
 categories = ["command-line-utilities", "development-tools"]
-publish = false # Enable only for the coordinated first public crates.io release.
 
 [dependencies]
 anyhow = "1"
