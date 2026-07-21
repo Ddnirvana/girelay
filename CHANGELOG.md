@@ -2,7 +2,7 @@
 
 All notable changes to girelay are documented here.
 
-## 0.1.0 - 2026-07-20
+## 0.1.0 - 2026-07-21
 
 - Added native Git worktrees under excluded `.girelay/workspaces` metadata.
 - Added the focused `setup`, `start`, `relay`, `status`, `merge`, `clean`, and
